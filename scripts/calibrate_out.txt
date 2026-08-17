@@ -1,0 +1,97 @@
+﻿=== Universe ===
+{
+  aMed: 144.6,
+  hkMed: 217.1,
+  a: 60,
+  hk: 40,
+  small: 29,
+  large: 71,
+  seeded: 80
+}
+resolved names: 100/100
+
+=== By archetype ===
+
+## capital_heavy (n=39)
+  [A/small] 绔嬫槀鎶€鏈?300010) mv=48.2 PE=-202.3 MoS=-40% need=31% [fair/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 元琛科硷拷(688659) mv=15.6 PE=-53.7 MoS=-40% need=47% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟捷达拷锟斤拷浴(603385) mv=20 PE=-8.6 MoS=-40% need=47% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] ST锟斤拷锟斤拷(000961) mv=21.4 PE=-0.1 MoS=null% need=47% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?瑙傛湜
+  [A/small] 锟斤拷锟斤拷锟斤拷锟斤拷(002159) mv=23.4 PE=17.5 MoS=-43.6% need=36% [fair/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 农锟叫伙拷锟斤拷(300536) mv=26 PE=-11.1 MoS=null% need=47% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?瑙傛湜
+  [A/small] 锟铰佳伙拷(002614) mv=29.8 PE=-53.4 MoS=-41.6% need=47% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷锟剿达拷(002403) mv=32.6 PE=-14 MoS=-40% need=40% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷强锟缴凤拷(300160) mv=33.6 PE=22.9 MoS=-41.4% need=40% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷锟铰科硷拷(300424) mv=36.7 PE=-138.6 MoS=-40% need=40% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷锟斤拷业(600127) mv=39.6 PE=-759.3 MoS=-40% need=40% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷锟斤拷锟斤拷(600609) mv=43.1 PE=20.5 MoS=-35.5% need=40% [cigar/moderate] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 锟斤拷锟斤拷锟斤拷锟斤拷(002919) mv=46.6 PE=188.1 MoS=-40% need=40% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 浜跨含閿傝兘(300014) mv=1176.4 PE=26.3 MoS=-38.1% need=33% [cigar/moderate] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  鈥?+25 more
+
+## bank (n=12)
+  [A/large] 鎷涘晢閾惰(600036) mv=9828.2 PE=6.5 MoS=-8% need=18% [fair/moderate] 鏄捐憲鍋忎綆 鈫?PB宸叉樉钁楁姌浠凤紙绾?9%锛夛紝鏈揪閾惰閲嶄粨绾匡紙闇€MoS鈮?8%锛?  [A/large] 鍏翠笟閾惰(601166) mv=3910.9 PE=5 MoS=7.6% need=23% [cigar/moderate] 鏄捐憲鍋忎綆 鈫?PB宸叉樉钁楁姌浠凤紙绾?4%锛夛紝鏈揪閾惰閲嶄粨绾匡紙闇€MoS鈮?3%锛?  [HK/large] 姹囦赴鎺ц偂(00005) mv=27510.9 PE=16.8 MoS=-42% need=23% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 寤鸿閾惰(00939) mv=23177.8 PE=6.2 MoS=-40.2% need=23% [cigar/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 宸ュ晢閾惰(01398) mv=25661.3 PE=6.3 MoS=-41.2% need=23% [cigar/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 涓摱棣欐腐(02388) mv=5328.7 PE=13.3 MoS=-40.5% need=23% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 涓浗閾惰(03988) mv=17012.8 PE=6.3 MoS=-41.5% need=23% [cigar/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 鍐滀笟閾惰(01288) mv=20771.5 PE=6.5 MoS=-42.7% need=23% [cigar/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 鎷涘晢閾惰(03968) mv=12332.5 PE=7.4 MoS=-40% need=23% [cigar/moderate] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 鍐滀笟閾惰(601288) mv=22748.9 PE=7.7 MoS=-23.3% need=18% [fair/moderate] 鍚堢悊鍋忎笅 鈫?PB鍚堢悊鍋忎笅锛氬彲灏忎粨/瀹氭姇锛岄摱琛岃姹傛洿澶ф姌鎵?  [A/large] 浜ら€氶摱琛?601328) mv=6132.5 PE=6.4 MoS=-16.4% need=23% [cigar/moderate] 鏄捐憲鍋忎綆 鈫?PB宸叉樉钁楁姌浠凤紙绾?8%锛夛紝鏈揪閾惰閲嶄粨绾匡紙闇€MoS鈮?3%锛?  [A/large] 宸ュ晢閾惰(601398) mv=26980 PE=7.3 MoS=-22.1% need=18% [fair/moderate] 鍚堢悊鍋忎笅 鈫?PB鍚堢悊鍋忎笅锛氬彲灏忎粨/瀹氭姇锛岄摱琛岃姹傛洿澶ф姌鎵?
+## cyclical (n=10)
+  [A/large] 娓╂皬鑲′唤(300498) mv=901.6 PE=41.3 MoS=-40% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 瀹濋挗鑲′唤(600019) mv=1274.3 PE=12.6 MoS=-38% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 涓婃苯闆嗗洟(600104) mv=1238 PE=12.3 MoS=-40% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 娴疯灪姘存偿(600585) mv=939.3 PE=12.1 MoS=-35.8% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 鍗庢柊姘存偿(600801) mv=478.4 PE=14.7 MoS=-39.7% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 涓浗绁炲崕(601088) mv=9536.8 PE=18.5 MoS=-37.9% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 涓浗绁炲崕(01088) mv=9291.8 PE=15.5 MoS=-40% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 闄曡タ鐓や笟(601225) mv=2412.1 PE=14.9 MoS=-37.7% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 骞挎苯闆嗗洟(601238) mv=536.4 PE=-6.2 MoS=6.9% need=36% [cigar/moderate] 鏁版嵁涓嶈冻 鈫?瑙傛湜
+  [A/large] 闀垮煄姹借溅(601633) mv=1344.6 PE=14.8 MoS=-41.4% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+
+## platform (n=10)
+  [HK/small] 寰洘闆嗗洟(02013) mv=51.2 PE=-20.9 MoS=-35.7% need=161% [cigar/hard] 鏁版嵁涓嶈冻 鈫?鑳藉姏鍦堣绀猴細榛樿銆屽お闅剧悊瑙ｃ€嶏紝闄ら潪浣犵湡鎳傚晢涓氭ā寮?  [HK/large] 鑵捐鎺ц偂(00700) mv=43571.3 PE=17.5 MoS=-25.3% need=28% [fair/moderate] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵逛繚瀹堝叕鍏丳E婧环锛?  [HK/large] 闃块噷宸村反-SW(09988) mv=23855.6 PE=20.3 MoS=-27.9% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵逛繚瀹堝叕鍏丳E婧环锛?  [HK/large] 缇庡洟-W(03690) mv=5693.1 PE=-22 MoS=-35.7% need=129% [cigar/hard] 鏁版嵁涓嶈冻 鈫?鑳藉姏鍦堣绀猴細榛樿銆屽お闅剧悊瑙ｃ€嶏紝闄ら潪浣犵湡鎳傚晢涓氭ā寮?  [HK/large] 蹇墜-W(01024) mv=1914.1 PE=9.3 MoS=-19.8% need=28% [fair/moderate] 浼板€煎悎鐞?鈫?PE澶ц嚧鍏厑锛氳鏈涗负涓?  [HK/large] 浜笢闆嗗洟-SW(09618) mv=3477.4 PE=16 MoS=-18.3% need=28% [fair/moderate] 浼板€煎悎鐞?鈫?PE澶ц嚧鍏厑锛氳鏈涗负涓?  [HK/large] 灏忕背闆嗗洟-W(01810) mv=6941.2 PE=15.1 MoS=-40% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵逛繚瀹堝叕鍏丳E婧环锛?  [HK/large] 鍝斿摡鍝斿摡-W(09626) mv=616.5 PE=46.6 MoS=-39.6% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵逛繚瀹堝叕鍏丳E婧环锛?  [HK/large] 浜笢鍋ュ悍(06618) mv=1250.3 PE=21 MoS=-30.2% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵逛繚瀹堝叕鍏丳E婧环锛?  [HK/large] 鎼虹▼闆嗗洟-S(09961) mv=2268.2 PE=6.2 MoS=8% need=28% [fair/moderate] 鏄捐憲鍋忎綆 鈫?PE宸插亸浣庯紝鏈揪骞冲彴閲嶄粨绾匡紙闇€MoS鈮?8%锛?
+## franchise_brand (n=9)
+  [A/small] 澶╂鼎涔充笟(600419) mv=27.3 PE=18.9 MoS=-12.7% need=22% [cigar/easy] 鍚堢悊鍋忎笅 鈫?瑙傛湜
+  [A/small] 鍙ｅ瓙绐?603589) mv=119.4 PE=30.5 MoS=-35.7% need=15% [good/easy] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/small] 娑櫟姒ㄨ彍(002507) mv=133.1 PE=17.3 MoS=29.5% need=15% [good/easy] 鏄捐憲鍋忎綆 鈫?鍏峰璇ョ被鎵€闇€淇濆畧瀹夊叏杈归檯锛堥棬妲涒増15%锛夛紝鍙€冭檻鍒嗘壒
+  [A/small] 閰掗閰?000799) mv=133.5 PE=-410.8 MoS=-40% need=15% [fair/easy] 鏁版嵁涓嶈冻 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 鐖卞皵鐪肩(300015) mv=811.9 PE=24.1 MoS=-37.9% need=12% [fair/easy] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 璐靛窞鑼呭彴(600519) mv=16357.9 PE=19.8 MoS=19.3% need=8% [wonderful/easy] 鏄捐憲鍋忎綆 鈫?鍏峰璇ョ被鎵€闇€淇濆畧瀹夊叏杈归檯锛堥棬妲涒増8%锛夛紝鍙€冭檻鍒嗘壒
+  [A/large] 浼婂埄鑲′唤(600887) mv=1664.8 PE=13.8 MoS=27.2% need=12% [fair/easy] 鏄捐憲鍋忎綆 鈫?鍏峰璇ョ被鎵€闇€淇濆畧瀹夊叏杈归檯锛堥棬妲涒増12%锛夛紝鍙€冭檻鍒嗘壒
+  [HK/large] 鏉庡畞(02331) mv=380.2 PE=11.7 MoS=13.6% need=16% [cigar/easy] 鏄捐憲鍋忎綆 鈫?鐣ヤ究瀹滐細瀹滃畾鎶曪紝鏈埌閲嶄粨绾?  [HK/large] 瀹夎笍浣撹偛(02020) mv=2083.5 PE=13.8 MoS=-4% need=16% [cigar/easy] 鏄捐憲鍋忎綆 鈫?瑙傛湜
+
+## insurance (n=7)
+  [HK/large] 涓浗骞冲畨(02318) mv=10375.7 PE=7 MoS=-36.4% need=29% [cigar/moderate] 鍚堢悊鍋忎笅 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 鍙嬮偊淇濋櫓(01299) mv=7568.6 PE=15.6 MoS=-40.3% need=29% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 涓浗浜哄(02628) mv=8208.1 PE=4.8 MoS=-6.2% need=29% [cigar/moderate] 鏄捐憲鍋忎綆 鈫?瑙傛湜
+  [A/large] 涓浗骞冲畨(601318) mv=9687.6 PE=7.3 MoS=-9.3% need=22% [fair/moderate] 鍚堢悊鍋忎笅 鈫?PB鍚堢悊鍋忎笅锛氬彲灏忎粨/瀹氭姇锛屼繚闄╄姹傛洿澶ф姌鎵?  [A/large] 鏂板崕淇濋櫓(601336) mv=1947.5 PE=5.3 MoS=-40.4% need=29% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?  [A/large] 涓浗澶繚(601601) mv=3046.8 PE=5.7 MoS=-11.8% need=22% [good/moderate] 浼板€煎悎鐞?鈫?PB澶ц嚧鍏厑锛氳鏈涗负涓?  [A/large] 涓浗浜哄(601628) mv=10783 PE=7.5 MoS=-35.4% need=22% [good/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?
+## broker (n=4)
+  [A/large] 涓滄柟璐㈠瘜(300059) mv=3166 PE=24.1 MoS=-42.4% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?  [A/large] 涓俊璇佸埜(600030) mv=4137.9 PE=12.3 MoS=-40% need=28% [fair/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?  [A/large] 鍥芥嘲鍚涘畨(601211) mv=3148.5 PE=14.3 MoS=-40.8% need=36% [cigar/moderate] 鏄捐憲鍋忛珮 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?  [A/large] 鍗庢嘲璇佸埜(601688) mv=1759.3 PE=10 MoS=-33.9% need=28% [fair/moderate] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸锛堢浉瀵瑰悎鐞哖B婧环锛?
+## real_estate (n=4)
+  [A/large] 淇濆埄鍙戝睍(600048) mv=630.8 PE=250.6 MoS=-4.4% need=39% [cigar/moderate] 鍚堢悊鍋忎笅 鈫?PB鍚堢悊鍋忎笅锛氬彲灏忎粨/瀹氭姇锛屽湴浜ц姹傛洿澶ф姌鎵?  [HK/small] 纰ф鍥?02007) mv=80.5 PE=2.2 MoS=35% need=65% [cigar/hard] 鏄捐憲鍋忎綆 鈫?鑳藉姏鍦堣绀猴細榛樿銆屽お闅剧悊瑙ｃ€嶏紝闄ら潪浣犵湡鎳傚晢涓氭ā寮?  [HK/small] 涓栬寕闆嗗洟(00813) mv=7.2 PE=0 MoS=8% need=65% [cigar/hard] 鏄捐憲鍋忎綆 鈫?鑳藉姏鍦堣绀猴細榛樿銆屽お闅剧悊瑙ｃ€嶏紝闄ら潪浣犵湡鎳傚晢涓氭ā寮?  [HK/large] 鍗庢鼎缃湴(01109) mv=2343.2 PE=8.3 MoS=-38% need=39% [cigar/moderate] 鏄捐憲鍋忎綆 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+
+## utility_infra (n=4)
+  [A/large] 闀挎睙鐢靛姏(600900) mv=6789.9 PE=18.8 MoS=-39.8% need=18% [fair/easy] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [A/large] 涓浗绉诲姩(600941) mv=20917.3 PE=15.4 MoS=-33.1% need=23% [cigar/easy] 浼板€煎悎鐞?鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+  [HK/large] 涓浗绉诲姩(00941) mv=17870.3 PE=11.8 MoS=-10.5% need=23% [cigar/easy] 鏄捐憲鍋忎綆 鈫?瑙傛湜
+  [A/large] 涓浗鐢典俊(601728) mv=5765 PE=18.2 MoS=-40% need=23% [cigar/easy] 鍚堢悊鍋忎笂 鈫?鍋忚吹锛氬ソ鍏徃鈮犲ソ浠锋牸
+
+## biotech (n=1)
+  [A/large] 鎭掔憺鍖昏嵂(600276) mv=3458.6 PE=42.6 MoS=-40% need=40% [fair/hard] 浼板€煎悎鐞?鈫?鑳藉姏鍦堣绀猴細榛樿銆屽お闅剧悊瑙ｃ€嶏紝闄ら潪浣犵湡鎳傚晢涓氭ā寮?
+=== Health checks ===
+|MoS|>50%: 0
+buy-ish hints: 7 (small-cap among them: 1)
+hard/competence-out: 5
+industry fallback 鍏朵粬/娓偂鍏朵粬: 28
+  e.g. 绔嬫槀鎶€鏈?300010), 元琛科硷拷(688659), 锟捷达拷锟斤拷浴(603385), ST锟斤拷锟斤拷(000961), 锟斤拷锟斤拷锟斤拷锟斤拷(002159), 农锟叫伙拷锟斤拷(300536), 锟铰佳伙拷(002614), 锟斤拷锟剿达拷(002403), 锟斤拷强锟缴凤拷(300160), 锟斤拷锟铰科硷拷(300424), 锟斤拷锟斤拷业(600127), 锟斤拷锟斤拷锟斤拷(600609), 锟斤拷锟斤拷锟斤拷锟斤拷(002919), 姹囧窛鎶€鏈?300124), 涓檯鏃垱(300308)
+verdict鈫攈int contradictions: 0
+
+=== Size 脳 market MoS stats ===
+  A/small n=15 avgMoS=-33.4% |MoS|>45=0 hard=0
+  A/large n=40 avgMoS=-27.3% |MoS|>45=0 hard=1
+  HK/small n=8 avgMoS=-23.0% |MoS|>45=0 hard=3
+  HK/large n=27 avgMoS=-28.9% |MoS|>45=0 hard=1
+
+Wrote C:\Users\1\Claude\Projects\FINANCIAL INFORMATION COLLECTION\FinDigest\scripts\calibrate_report.json

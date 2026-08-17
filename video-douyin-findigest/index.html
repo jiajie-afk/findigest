@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>FinDigest 抖音口播 更狠版 2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0a0a0a;
+      }
+      body {
+        font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+        color: #f5f0e6;
+      }
+      @font-face {
+        font-family: "Microsoft YaHei";
+        src: local("Microsoft YaHei"), local("微软雅黑");
+        font-weight: 400 900;
+      }
+      @font-face {
+        font-family: "PingFang SC";
+        src: local("PingFang SC");
+        font-weight: 400 900;
+      }
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: local("Noto Sans SC");
+        font-weight: 400 900;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #0a0a0a;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .scene-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse at 50% 20%, rgba(197,160,89,0.12), transparent 55%),
+          #0a0a0a;
+      }
+      .noise {
+        position: absolute;
+        inset: 0;
+        opacity: 0.08;
+        background-image: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(255,255,255,0.03) 2px,
+          rgba(255,255,255,0.03) 4px
+        );
+      }
+      .pad { padding: 96px 72px 140px; height: 100%; display: flex; flex-direction: column; }
+      .brand {
+        font-size: 28px; letter-spacing: 0.12em; color: #c5a059; font-weight: 700;
+        margin-bottom: 48px;
+      }
+      .smash {
+        display: flex; flex-direction: column; gap: 28px; justify-content: center; flex: 1;
+      }
+      .smash-word {
+        font-size: 120px; font-weight: 900; line-height: 1; letter-spacing: 0.04em;
+      }
+      .smash-word.q { color: #ff4d4d; }
+      .smash-word.cut { color: #f5f0e6; }
+      .smash-word.dead { color: #c5a059; }
+      .subbar {
+        margin-top: auto;
+        font-size: 34px; font-weight: 700; color: #f5f0e6;
+        border-left: 6px solid #c5a059; padding-left: 24px;
+      }
+      .big {
+        font-size: 64px; font-weight: 900; line-height: 1.25; letter-spacing: 0.02em;
+      }
+      .mid {
+        font-size: 42px; font-weight: 700; line-height: 1.4; color: #e8e2d4;
+      }
+      .small {
+        font-size: 30px; line-height: 1.5; color: #a8a092;
+      }
+      .pill-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 36px 0; }
+      .pill {
+        border: 2px solid rgba(255,77,77,0.55);
+        color: #ffb4b4;
+        padding: 14px 22px;
+        font-size: 28px;
+        font-weight: 700;
+        border-radius: 8px;
+      }
+      .pill.gold {
+        border-color: rgba(197,160,89,0.7);
+        color: #c5a059;
+      }
+      .ui-card {
+        margin-top: 40px;
+        background: linear-gradient(160deg, #16120c 0%, #0f0d0a 100%);
+        border: 1px solid rgba(197,160,89,0.35);
+        border-radius: 18px;
+        padding: 36px 32px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+      }
+      .ui-card h3 {
+        font-size: 28px; color: #c5a059; margin-bottom: 20px; letter-spacing: 0.08em;
+      }
+      .ui-line {
+        font-size: 34px; font-weight: 700; margin: 14px 0; color: #f5f0e6;
+      }
+      .ui-meta { font-size: 26px; color: #8a8578; margin-top: 18px; }
+      .step {
+        display: flex; gap: 20px; align-items: flex-start; margin: 22px 0;
+      }
+      .step-num {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: #c5a059; color: #0a0a0a;
+        display: grid; place-items: center;
+        font-size: 28px; font-weight: 900; flex-shrink: 0;
+      }
+      .step-body { font-size: 36px; font-weight: 700; line-height: 1.35; }
+      .cta {
+        font-size: 56px; font-weight: 900; line-height: 1.3;
+      }
+      .cta-sub {
+        margin-top: 28px; font-size: 36px; color: #c5a059; font-weight: 700;
+      }
+      .compliance {
+        position: absolute;
+        left: 48px; right: 48px; bottom: 36px;
+        font-size: 22px; color: rgba(168,160,146,0.85); z-index: 20;
+        pointer-events: none;
+      }
+      .waterfall, .chatspam {
+        position: absolute; inset: 0; opacity: 0.22; overflow: hidden;
+        font-family: "JetBrains Mono", "Consolas", monospace;
+        font-size: 22px; line-height: 1.6; color: #9a9488; padding: 80px 40px;
+      }
+      .chatspam { color: #c09090; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="60"
+      data-width="1080"
+      data-height="1920"
+    >
+      <audio
+        id="vo"
+        src="assets/audio/vo.wav"
+        data-start="0"
+        data-duration="60"
+        data-track-index="0"
+        preload="auto"
+      ></audio>
+
+      <!-- 0–5 钩子 -->
+      <section id="hook" class="clip" data-start="0" data-duration="5" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="waterfall" aria-hidden="true">
+          涨停复盘 · 龙虎榜 · 热股 · 研报摘要 · 股吧热帖 · 资金流向 · 盘中异动 · 涨停复盘 · 龙虎榜 · 热股
+        </div>
+        <div class="noise"></div>
+        <div class="pad">
+          <div class="brand">FINDIGEST</div>
+          <div class="smash">
+            <div id="w1" class="smash-word q">加？</div>
+            <div id="w2" class="smash-word cut">减？</div>
+            <div id="w3" class="smash-word dead">装死？</div>
+          </div>
+          <div id="hook-sub" class="subbar">东财瀑布｜雪球吵架｜仓位呢？</div>
+        </div>
+      </section>
+
+      <!-- 5–18 硬刚 -->
+      <section id="hard" class="clip" data-start="5" data-duration="13" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="chatspam" aria-hidden="true">
+          你怎么看 · 满仓干 · 还会跌 · 抄底了吗 · 情绪面 · 你怎么看 · 满仓干 · 还会跌
+        </div>
+        <div class="noise"></div>
+        <div class="pad">
+          <div class="brand">FINDIGEST</div>
+          <p id="hard-1" class="big">刷得越多，<br/>越像在研究。</p>
+          <p id="hard-2" class="mid" style="margin-top:28px">其实只是电子榨菜。</p>
+          <div class="pill-row">
+            <span class="pill">刷资讯 = 电子榨菜</span>
+            <span class="pill">资讯喂胖 · 仓位还空</span>
+          </div>
+          <p id="hard-3" class="mid" style="margin-top:auto">
+            FinDigest 不陪你刷。<br/>只翻译成：加、减、观察，或硬约束。
+          </p>
+        </div>
+      </section>
+
+      <!-- 18–26 决策流 1 -->
+      <section id="flow1" class="clip" data-start="18" data-duration="8" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="noise"></div>
+        <div class="pad">
+          <div class="brand">FINDIGEST · 决策流 1/3</div>
+          <div id="s1" class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">今日简报：焦点少到数得清，不是第二面行情墙。</div>
+          </div>
+          <div id="card1" class="ui-card">
+            <h3>今日简报 · Museum</h3>
+            <div class="ui-line">焦点 01 · 估值偏离</div>
+            <div class="ui-line">焦点 02 · 管理层信号</div>
+            <div class="ui-line">焦点 03 · 组合暴露</div>
+            <div class="ui-meta">少噪音 · 先决策</div>
+          </div>
+          <p class="subbar" style="margin-top:auto">简报 → 明牌估值 → 仓位含义</p>
+        </div>
+      </section>
+
+      <!-- 26–34 决策流 2 -->
+      <section id="flow2" class="clip" data-start="26" data-duration="8" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="noise"></div>
+        <div class="pad">
+          <div class="brand">FINDIGEST · 决策流 2/3</div>
+          <div id="s2" class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">个股摊开主锚 + 方法卡：算什么、赌什么、哪里故意不算。</div>
+          </div>
+          <div id="card2" class="ui-card">
+            <h3>方法卡 · 明牌</h3>
+            <div class="ui-line">主锚：约 11 类可计算</div>
+            <div class="ui-line">角度：思考用 · 不改主锚</div>
+            <div class="ui-meta">非投资建议 · methodVersion</div>
+          </div>
+          <p class="subbar" style="margin-top:auto">到含义就停，不装神医</p>
+        </div>
+      </section>
+
+      <!-- 34–42 决策流 3 -->
+      <section id="flow3" class="clip" data-start="34" data-duration="8" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="noise"></div>
+        <div class="pad">
+          <div class="brand">FINDIGEST · 决策流 3/3</div>
+          <div id="s3" class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">点采纳 → 仓位含义：加 / 减 / 观察 / 硬约束。</div>
+          </div>
+          <div id="card3" class="ui-card">
+            <h3>仓位含义</h3>
+            <div class="ui-line" style="color:#c5a059">建议：观察 · 未触及硬约束</div>
+            <div class="ui-meta">到含义就停 · 不装神医 · 不下单</div>
+          </div>
+          <p id="flow-sub" class="subbar" style="margin-top:auto">简报 → 明牌估值 → 仓位含义</p>
+        </div>
+      </section>
+
+      <!-- 42–52 金句 -->
+      <section id="gold" class="clip" data-start="42" data-duration="10" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="noise"></div>
+        <div class="pad" style="justify-content:center">
+          <div class="brand">FINDIGEST</div>
+          <p id="g1" class="big">别跟我比谁信息多。</p>
+          <p id="g2" class="big" style="color:#ff4d4d; margin-top:24px">信息越多，仓位越空。</p>
+          <p id="g3" class="mid" style="margin-top:48px">
+            真优势就一句：<br/><span style="color:#c5a059">敢写清楚</span>——什么在算、什么只是角度、什么我们不算。
+          </p>
+          <div class="pill-row" style="margin-top:40px">
+            <span class="pill gold">敢写清楚，才算本事</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 52–60 CTA -->
+      <section id="cta" class="clip" data-start="52" data-duration="8" data-track-index="1">
+        <div class="scene-bg"></div>
+        <div class="noise"></div>
+        <div class="pad" style="justify-content:center; text-align:left">
+          <div class="brand">FINDIGEST</div>
+          <p id="cta1" class="cta">打开 FinDigest<br/>先看今日简报。</p>
+          <p id="cta2" class="cta-sub">看完还没底，算我输。</p>
+          <div class="ui-card" style="margin-top:48px">
+            <h3>封面建议</h3>
+            <div class="ui-line">加？减？还是装死？</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="compliance">内容仅供信息参考，不构成投资建议。</div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Hook smash 0–2s critical
+      tl.from("#w1", { scale: 1.35, opacity: 0, duration: 0.35, ease: "power4.out" }, 0.05);
+      tl.from("#w2", { scale: 1.35, opacity: 0, duration: 0.35, ease: "power4.out" }, 0.55);
+      tl.from("#w3", { scale: 1.35, opacity: 0, duration: 0.35, ease: "power4.out" }, 1.05);
+      tl.from("#hook-sub", { y: 24, opacity: 0, duration: 0.4, ease: "power3.out" }, 1.6);
+
+      // Hard
+      tl.from("#hard-1", { y: 36, opacity: 0, duration: 0.45, ease: "power3.out" }, 5.1);
+      tl.from("#hard-2", { y: 28, opacity: 0, duration: 0.4, ease: "power3.out" }, 5.7);
+      tl.from("#hard .pill", { y: 16, opacity: 0, duration: 0.35, stagger: 0.08, ease: "power2.out" }, 6.4);
+      tl.from("#hard-3", { y: 28, opacity: 0, duration: 0.45, ease: "power3.out" }, 8.2);
+
+      // Flow cards progressive
+      tl.from("#s1", { x: -30, opacity: 0, duration: 0.4, ease: "power3.out" }, 18.1);
+      tl.from("#card1", { y: 40, opacity: 0, duration: 0.45, ease: "power3.out" }, 18.5);
+      tl.from("#s2", { x: -30, opacity: 0, duration: 0.4, ease: "power3.out" }, 26.1);
+      tl.from("#card2", { y: 40, opacity: 0, duration: 0.45, ease: "power3.out" }, 26.5);
+      tl.from("#s3", { x: -30, opacity: 0, duration: 0.4, ease: "power3.out" }, 34.1);
+      tl.from("#card3", { y: 40, opacity: 0, duration: 0.45, ease: "power3.out" }, 34.5);
+      tl.from("#flow-sub", { y: 20, opacity: 0, duration: 0.35, ease: "power2.out" }, 36.5);
+
+      // Gold
+      tl.from("#g1", { y: 30, opacity: 0, duration: 0.4, ease: "power3.out" }, 42.1);
+      tl.from("#g2", { scale: 1.12, opacity: 0, duration: 0.45, ease: "power4.out" }, 43.0);
+      tl.from("#g3", { y: 24, opacity: 0, duration: 0.45, ease: "power3.out" }, 45.0);
+      tl.from("#gold .pill", { y: 16, opacity: 0, duration: 0.35, ease: "power2.out" }, 47.2);
+
+      // CTA
+      tl.from("#cta1", { y: 36, opacity: 0, duration: 0.45, ease: "power3.out" }, 52.1);
+      tl.from("#cta2", { y: 20, opacity: 0, duration: 0.4, ease: "power3.out" }, 53.2);
+      tl.from("#cta .ui-card", { y: 28, opacity: 0, duration: 0.4, ease: "power3.out" }, 54.2);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

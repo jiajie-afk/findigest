@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "send-sms": { "verify_jwt": false },
+    "send-email": { "verify_jwt": false }
+  }
+}

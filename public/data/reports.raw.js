@@ -1,0 +1,1 @@
+export default [{id:1,title:"2026-08-04 每日财经报告",date:"2026-08-04T08:00",sent:true},{id:2,title:"2026-08-01 每日财经报告",date:"2026-08-01T08:00",sent:true},{id:3,title:"2026-07-31 每日财经报告",date:"2026-07-31T08:00",sent:true}]

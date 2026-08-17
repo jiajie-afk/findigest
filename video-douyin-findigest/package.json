@@ -1,0 +1,20 @@
+{
+  "name": "video-douyin-findigest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.7.107 preview",
+    "check": "npx --yes hyperframes@0.7.107 check",
+    "render": "npx --yes hyperframes@0.7.107 render",
+    "publish": "npx --yes hyperframes@0.7.107 publish"
+  },
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}

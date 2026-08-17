@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FinDigest 持仓导入</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        margin: 0;
+        padding: 12px;
+        width: 320px;
+        background: #0f1214;
+        color: #ece6d8;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+        font-weight: 650;
+      }
+      p {
+        margin: 0 0 10px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: #9a9488;
+      }
+      button {
+        width: 100%;
+        margin-top: 6px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 2px;
+        font-weight: 650;
+        cursor: pointer;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .row button {
+        margin-top: 0;
+      }
+      .primary {
+        background: #c5a059;
+        color: #0a0b0c;
+      }
+      .ghost {
+        background: transparent;
+        color: #c5a059;
+        border: 1px solid rgba(197, 160, 89, 0.4);
+      }
+      pre {
+        max-height: 160px;
+        overflow: auto;
+        font-size: 11px;
+        background: #121416;
+        padding: 8px;
+        border: 1px solid rgba(236, 230, 216, 0.1);
+        white-space: pre-wrap;
+      }
+      .err {
+        color: #e07070;
+        font-size: 12px;
+      }
+      .ok {
+        color: #7dba8a;
+        font-size: 12px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: #9a9488;
+        margin-top: 8px;
+      }
+      select {
+        width: 100%;
+        margin-top: 4px;
+        background: #121416;
+        color: #ece6d8;
+        border: 1px solid rgba(236, 230, 216, 0.15);
+        padding: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FinDigest 持仓导入</h1>
+    <p>必须先登录<strong>网页交易</strong>（东财佣金宝 / 同花顺网上交易），不是行情软件。不采集账号密码。</p>
+    <div class="row">
+      <button class="ghost" id="open-em" type="button">打开东财登录</button>
+      <button class="ghost" id="open-ths" type="button">打开同花顺登录</button>
+    </div>
+    <button class="primary" id="scrape">读取本页持仓</button>
+    <button class="ghost" id="copy" disabled>复制 JSON</button>
+    <label>
+      发送到
+      <select id="target">
+        <option value="http://127.0.0.1:5173/portfolio?import=extension">本地 127.0.0.1:5173</option>
+        <option value="http://localhost:5173/portfolio?import=extension">本地 localhost:5173</option>
+        <option value="https://findigest-three.vercel.app/portfolio?import=extension">线上 Vercel</option>
+      </select>
+    </label>
+    <button class="primary" id="send" disabled>发送到 FinDigest</button>
+    <p id="status" class="err"></p>
+    <pre id="preview">尚未读取</pre>
+    <script src="popup.js"></script>
+  </body>
+</html>

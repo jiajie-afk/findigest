@@ -1,0 +1,428 @@
+/**
+ * Basic edition — Cipher Museum palette
+ * Ref: https://ciphermuseum.com/
+ * Design Read: museum / heritage desk for everyday investors
+ * VARIANCE 6 · MOTION 4 · DENSITY 3
+ * Ink #0a0b0c · parchment #ece6d8 · mist #9a9488 · gold #c5a059
+ * Newsreader display · sharp 2px · no teal · no AI purple
+ *
+ * Density contract (Museum):
+ * - Focus: one primary decision block per viewport; secondary in <details> closed by default
+ * - Type: --fd-type-focus ~1.45–1.85rem display; body 14–15px; meta 12–13px
+ * - Space: --fd-space-block for section gaps (more breath than Pro)
+ * - CTA: gold #c5a059 only — never electric cyan #00e8c8 as primary CTA (Pricing page excepted)
+ * - Cap: daily focus ≤3; stock deep blocks (mgmt / sentiment / events) default-collapsed
+ */
+
+[data-style='luxury'] {
+  color-scheme: dark;
+  --bg: #0a0b0c;
+  --bg-deep: #060607;
+  --bg2: #121416;
+  --panel: #121416;
+  --surface: rgba(18, 20, 22, 0.72);
+  --surface-2: rgba(21, 23, 26, 0.92);
+  --card: #121416;
+  --tp: #ece6d8;
+  --ts: #9a9488;
+  --tt: #6e6960;
+  --accent: #c5a059;
+  --accent-hover: #a8843f;
+  --accent-soft: rgba(197, 160, 89, 0.12);
+  --accent-ring: rgba(197, 160, 89, 0.28);
+  --gain: #c5a059;
+  --gain-soft: rgba(197, 160, 89, 0.12);
+  --loss: #c47a7a;
+  --loss-soft: rgba(196, 122, 122, 0.12);
+  --warn: #c5a059;
+  --warn-soft: rgba(197, 160, 89, 0.14);
+  --sep: rgba(236, 230, 216, 0.1);
+  --line: rgba(197, 160, 89, 0.28);
+  --r: 2px;
+  --rb: 2px;
+  --rx: 4px;
+  --fd-space-block: clamp(28px, 5vh, 48px);
+  --fd-type-focus: clamp(1.45rem, 3.2vw, 1.85rem);
+  --font: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Newsreader', 'Songti SC', 'STSong', Georgia, serif;
+  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  --desk-glow:
+    radial-gradient(ellipse 55% 40% at 12% -6%, rgba(197, 160, 89, 0.1), transparent 55%),
+    linear-gradient(180deg, #0e1012 0%, #0a0b0c 50%, #080809 100%);
+}
+
+/* Secondary analysis: parchment breath — collapsed by default in views */
+[data-style='luxury'] details.fd-density-fold {
+  margin: var(--fd-space-block) 0;
+  border-top: 1px solid var(--sep);
+  padding-top: 12px;
+}
+[data-style='luxury'] details.fd-density-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--ts);
+  padding: 8px 0;
+  user-select: none;
+}
+[data-style='luxury'] details.fd-density-fold > summary::-webkit-details-marker {
+  display: none;
+}
+[data-style='luxury'] details.fd-density-fold[open] > summary {
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+[data-style='luxury'] body,
+[data-style='luxury'].app-shell {
+  background: var(--bg);
+  background-image: var(--desk-glow);
+  background-attachment: fixed;
+  color: var(--tp);
+  font-family: var(--font);
+}
+
+/* ── Nav: museum top bar ── */
+[data-style='luxury'] .nav {
+  height: 56px;
+  background: rgba(10, 11, 12, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(236, 230, 216, 0.08);
+}
+
+[data-style='luxury'] .ni {
+  max-width: 1120px;
+  min-height: 56px;
+  padding: 0 clamp(16px, 3vw, 36px);
+}
+
+[data-style='luxury'] .nl-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--accent);
+  color: #0a0b0c;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+[data-style='luxury'] .nl-brand {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tp);
+}
+
+[data-style='luxury'] .nl-tag {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+[data-style='luxury'] .nl-edition {
+  margin-left: 6px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  padding: 1px 5px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+[data-style='luxury'] .nlinks a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ts);
+  padding: 6px 10px;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+[data-style='luxury'] .nlinks a:hover {
+  color: var(--accent);
+  background: rgba(197, 160, 89, 0.08);
+}
+
+[data-style='luxury'] .nlinks a.on {
+  color: var(--tp);
+  background: rgba(197, 160, 89, 0.1);
+  box-shadow: none;
+  border-radius: 2px;
+  font-weight: 650;
+  padding: 6px 10px;
+}
+
+[data-style='luxury'] .nu-chip {
+  border-radius: 2px;
+  border-color: rgba(197, 160, 89, 0.28);
+  background: rgba(197, 160, 89, 0.06);
+  color: var(--tp);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 650;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* ── Page ── */
+[data-style='luxury'] .page {
+  padding: clamp(28px, 5vh, 48px) clamp(20px, 3vw, 36px) 100px;
+}
+
+[data-style='luxury'] .pt {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3.2vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tp);
+}
+
+[data-style='luxury'] .pt-sub {
+  color: var(--ts);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+[data-style='luxury'] .pt-sub a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.4);
+}
+
+/* ── Welcome / workspace mast ── */
+[data-style='luxury'] .welcome {
+  border-bottom-color: rgba(236, 230, 216, 0.1);
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+}
+
+[data-style='luxury'] .welcome-brand {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+[data-style='luxury'] .welcome-kicker {
+  color: var(--accent);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+[data-style='luxury'] .welcome-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.05rem, 4.2vw, 2.85rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  color: var(--tp);
+}
+
+[data-style='luxury'] .welcome-title em {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+[data-style='luxury'] .welcome-desc {
+  color: var(--ts);
+  max-width: 36ch;
+}
+
+[data-style='luxury'] .welcome-panel {
+  border-left-color: rgba(197, 160, 89, 0.28);
+}
+
+[data-style='luxury'] .welcome-panel-value {
+  font-family: var(--mono);
+  color: var(--tp);
+}
+
+/* ── Sections / cards ── */
+[data-style='luxury'] .section-h h3,
+[data-style='luxury'] .ch h3 {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+[data-style='luxury'] .card {
+  border-top-color: rgba(236, 230, 216, 0.1);
+  margin-bottom: 32px;
+  border-radius: 0;
+}
+
+[data-style='luxury'] .stats {
+  border-color: rgba(197, 160, 89, 0.22);
+}
+
+[data-style='luxury'] .st {
+  border-right-color: rgba(236, 230, 216, 0.1);
+}
+
+[data-style='luxury'] .st:hover {
+  background: rgba(197, 160, 89, 0.06);
+}
+
+[data-style='luxury'] .sv {
+  color: var(--tp);
+}
+
+/* ── Buttons: museum gold CTA ── */
+[data-style='luxury'] .btn {
+  height: 44px;
+  padding: 0 1.35rem;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+[data-style='luxury'] .bp {
+  background: var(--accent);
+  color: #0a0b0c;
+}
+
+[data-style='luxury'] .bp:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+[data-style='luxury'] .bs {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+}
+
+[data-style='luxury'] .bs:hover:not(:disabled) {
+  background: rgba(197, 160, 89, 0.1);
+  border-color: var(--accent);
+  color: var(--tp);
+}
+
+[data-style='luxury'] .sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 12.5px;
+}
+
+/* ── Forms ── */
+[data-style='luxury'] .fld label {
+  color: var(--ts);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-style='luxury'] .fld input,
+[data-style='luxury'] .fld select,
+[data-style='luxury'] .fld textarea {
+  background: rgba(18, 20, 22, 0.9);
+  border: 1px solid rgba(236, 230, 216, 0.12);
+  border-radius: 2px;
+  color: var(--tp);
+}
+
+[data-style='luxury'] .fld input:focus,
+[data-style='luxury'] .fld select:focus,
+[data-style='luxury'] .fld textarea:focus {
+  border-color: rgba(197, 160, 89, 0.55);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+}
+
+/* ── Tables / holdings ── */
+[data-style='luxury'] .tbl th {
+  color: var(--ts);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom-color: rgba(236, 230, 216, 0.1);
+}
+
+[data-style='luxury'] .tbl td {
+  border-bottom-color: rgba(236, 230, 216, 0.06);
+  color: var(--tp);
+}
+
+[data-style='luxury'] .tbl tr:hover td {
+  background: rgba(197, 160, 89, 0.05);
+}
+
+/* ── Actions / briefing ── */
+[data-style='luxury'] .action-row {
+  background: rgba(18, 20, 22, 0.65);
+  border-color: rgba(236, 230, 216, 0.1);
+  border-radius: 2px;
+}
+
+[data-style='luxury'] .action-row:hover {
+  background: rgba(197, 160, 89, 0.06);
+  border-color: rgba(197, 160, 89, 0.28);
+}
+
+[data-style='luxury'] .action-pill {
+  border-radius: 2px;
+  background: rgba(10, 11, 12, 0.65);
+  border-color: rgba(236, 230, 216, 0.12);
+}
+
+[data-style='luxury'] .gate-banner {
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px solid rgba(197, 160, 89, 0.28);
+  border-radius: 2px;
+  color: var(--tp);
+}
+
+[data-style='luxury'] .badge {
+  border-radius: 2px;
+}
+
+[data-style='luxury'] .tab-bar,
+[data-style='luxury'] .theme-btn,
+[data-style='luxury'] .fbtn {
+  border-radius: 2px;
+}
+
+[data-style='luxury'] .toast {
+  background: #121416;
+  border: 1px solid rgba(197, 160, 89, 0.28);
+  color: var(--tp);
+  border-radius: 2px;
+}
+
+@media (max-width: 900px) {
+  [data-style='luxury'] .nlinks {
+    display: none;
+  }
+  [data-style='luxury'] .page {
+    padding: 22px 16px 28px;
+  }
+  [data-style='luxury'] .pt {
+    font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+  }
+  [data-style='luxury'] .mtab.on {
+    box-shadow: inset 0 2px 0 var(--accent, #c5a059);
+  }
+}

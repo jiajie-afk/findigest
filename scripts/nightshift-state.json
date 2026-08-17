@@ -1,0 +1,40 @@
+{
+  "purpose": "overnight complete — morning briefing delivered 2026-08-14 ~10:38 Asia/Shanghai",
+  "nightshiftLoop": "stopped",
+  "morningSmoke": {
+    "smoke_nightshift": "pass",
+    "smoke_value_story": "pass",
+    "smoke_storytelling": "pass"
+  },
+  "shippedOvernight": [
+    "UI frozen; no SendKeys/SMS/commit",
+    "景区/酒店 → cyclical; 百货/超市 → capital_heavy",
+    "bank/broker short-token gates; 江苏雷利≠城商行; 长江电力≠券商",
+    "bank absurd PB → EPS/ROE salvage → ~32/37 pb_roe",
+    "MoS: soft converge then hard cap (no lying details)",
+    "empty books → hard / 数据不足",
+    "「其他」~589→502; live named-other ~87→31",
+    "value briefing: 生意→价格→逆向; catalysts deprioritized; invertRisks in logic"
+  ],
+  "stillBlockedOnHuman": [
+    "findigest.cn domain review / ICP / Aliyun DirectMail DNS / SMS signature",
+    "East Money QR: 东方财富证券 App after updater",
+    "WeChat merchant / checkout",
+    "~434 empty-name shells (Eastmoney returns null)"
+  ],
+  "grillUnanswered": [
+    {
+      "id": "Q1",
+      "title": "今天你要看什么",
+      "body": "A 本机可点走通 B 只看书面状态 C 继续估值/叙事",
+      "recommend": "C or A"
+    },
+    {
+      "id": "Q4",
+      "title": "估值 vs 叙事",
+      "body": "A 先修 IV B 先修讲故事 C 两边并行 IV 优先",
+      "recommend": "C"
+    }
+  ],
+  "updatedAt": "2026-08-14T02:38:25.000Z"
+}

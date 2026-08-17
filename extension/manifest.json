@@ -1,0 +1,90 @@
+{
+  "manifest_version": 3,
+  "name": "FinDigest 持仓导入",
+  "version": "1.1.0",
+  "description": "登录东方财富 / 同花顺网页交易后读取持仓，发送到 FinDigest（不采集账号密码）",
+  "action": {
+    "default_title": "FinDigest 持仓导入",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://*.eastmoney.com/*",
+    "http://*.eastmoney.com/*",
+    "https://jywg.18.cn/*",
+    "https://*.18.cn/*",
+    "https://jywg.eastmoney.com/*",
+    "https://trade.eastmoney.com/*",
+    "https://*.eastmoneysec.com/*",
+    "https://*.tigerbrokers.com/*",
+    "https://*.itiger.com/*",
+    "https://www.tigersecurities.com/*",
+    "https://*.10jqka.com.cn/*",
+    "http://*.10jqka.com.cn/*",
+    "https://eq.10jqka.com.cn/*",
+    "https://trade.10jqka.com.cn/*",
+    "https://upass.10jqka.com.cn/*",
+    "https://*.thsi.cn/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://findigest-three.vercel.app/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://127.0.0.1/*",
+      "http://localhost/*",
+      "https://findigest-three.vercel.app/*"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.eastmoney.com/*",
+        "http://*.eastmoney.com/*",
+        "https://jywg.18.cn/*",
+        "https://*.18.cn/*",
+        "https://jywg.eastmoney.com/*",
+        "https://trade.eastmoney.com/*",
+        "https://*.eastmoneysec.com/*"
+      ],
+      "js": ["content-shared.js", "content-eastmoney.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "https://*.tigerbrokers.com/*",
+        "https://*.itiger.com/*",
+        "https://www.tigersecurities.com/*"
+      ],
+      "js": ["content-shared.js", "content-tiger.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "https://*.10jqka.com.cn/*",
+        "http://*.10jqka.com.cn/*",
+        "https://eq.10jqka.com.cn/*",
+        "https://trade.10jqka.com.cn/*",
+        "https://upass.10jqka.com.cn/*",
+        "https://*.thsi.cn/*"
+      ],
+      "js": ["content-shared.js", "content-ths.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "http://127.0.0.1/*",
+        "http://localhost/*",
+        "https://findigest-three.vercel.app/*"
+      ],
+      "js": ["content-findigest.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "findigest",
+  "private": false,
+  "version": "2.0.0",
+  "description": "Private research desk for your holdings. Hard constraints first. Stops at position meaning — no stock picks, no target prices.",
+  "license": "MIT",
+  "homepage": "https://findigest.cn",
+  "bugs": {
+    "url": "https://github.com/jiajie-afk/findigest/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiajie-afk/findigest.git"
+  },
+  "keywords": [
+    "vue",
+    "investing",
+    "portfolio",
+    "valuation",
+    "research-desk",
+    "not-financial-advice"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:keep": "node scripts/ensure-dev-server.mjs",
+    "dev:open": "node scripts/ensure-dev-server.mjs && node -e \"import('node:child_process').then(c=>c.exec(process.platform==='win32'?'start http://127.0.0.1:5173/app':'open http://127.0.0.1:5173/app'))\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite preview --host",
+    "extract": "python scripts/extract_legacy.py",
+    "build:universe": "node scripts/build_universe.mjs",
+    "build:valuable-universe": "node scripts/build_valuable_universe.mjs",
+    "smoke:paradigm": "node scripts/smoke_paradigm_resolver.mjs",
+    "smoke:value-story": "node scripts/smoke_value_story.mjs",
+    "smoke:storytelling": "node scripts/smoke_storytelling.mjs",
+    "smoke:entitlements": "node scripts/smoke_entitlements.mjs",
+    "smoke:api-security": "node scripts/smoke_api_security.mjs",
+    "check:engine-hints": "node scripts/check_engine_hints.mjs",
+    "test:unit": "node scripts/smoke_paradigm_resolver.mjs && node scripts/smoke_entitlements.mjs && node scripts/check_engine_hints.mjs && node scripts/smoke_value_story.mjs && node scripts/smoke_storytelling.mjs && node scripts/smoke_api_security.mjs && node scripts/smoke_llm_briefing_guard.mjs",
+    "smoke:nightshift": "node scripts/smoke_nightshift.mjs",
+    "setup:china-auth": "node scripts/setup-china-auth.wizard.mjs",
+    "doctor:auth": "node scripts/doctor-auth.mjs",
+    "setup:upstash": "node scripts/setup-upstash.wizard.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
+    "@fontsource/source-sans-3": "^5.3.0",
+    "@supabase/supabase-js": "^2.112.3",
+    "@vercel/blob": "^2.7.0",
+    "pinia": "^4.0.2",
+    "tesseract.js": "^5.1.1",
+    "vue": "^3.5.40",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^8.2.0"
+  }
+}

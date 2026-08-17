@@ -1,0 +1,7 @@
+/em-f10/*  https://emweb.securities.eastmoney.com/:splat  200!
+/landing/*  /landing/:splat  200
+/og.png  /og.png  200
+/cover-douyin.png  /cover-douyin.png  200
+/robots.txt  /robots.txt  200
+/sitemap.xml  /sitemap.xml  200
+/*    /index.html   200

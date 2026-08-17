@@ -1,0 +1,91 @@
+[
+  {
+    "title": "贵州茅台 2026半年报披露",
+    "event_date": "2026-08-15",
+    "event_type": "confirmed",
+    "importance": 5,
+    "catalyst_type": "earnings",
+    "catalyst_label": "财报/业绩",
+    "buy_from": "2026-08-12",
+    "sell_by": "2026-08-16",
+    "trade_hint": "交易窗口：建议 2026-08-12 前布局，事件后至 2026-08-16 评估兑现/减仓",
+    "description": "贵州茅台（600519）2026半年报预计于 2026-08-15 披露。市场预期营收增长15%-18%，关注直销渠道占比变化。",
+    "related_stock_codes": "600519",
+    "source_url": "https://data.eastmoney.com/notices/stock/600519.html"
+  },
+  {
+    "title": "泡泡玛特 世界杯广告投放窗口",
+    "event_date": "2026-08-20",
+    "event_type": "potential",
+    "importance": 4,
+    "catalyst_type": "ad_sponsor",
+    "catalyst_label": "广告/赞助",
+    "buy_from": "2026-08-19",
+    "sell_by": "2026-08-21",
+    "trade_hint": "交易窗口：建议 2026-08-19 前布局，广告曝光后至 2026-08-21 评估兑现",
+    "description": "若确认世界杯相关广告/赞助曝光，事件驱动交易节奏通常是前一日布局、曝光后兑现。请以官方公告为准。",
+    "related_stock_codes": "9992",
+    "source_url": "https://so.eastmoney.com/news/s?keyword=%E6%B3%A1%E6%B3%A1%E7%8E%9B%E7%89%B9%20%E4%B8%96%E7%95%8C%E6%9D%AF"
+  },
+  {
+    "title": "影视题材 · 暑期档爆款上映观察",
+    "event_date": "2026-08-10",
+    "event_type": "potential",
+    "importance": 4,
+    "catalyst_type": "film_ip",
+    "catalyst_label": "影视/IP",
+    "buy_from": "2026-08-08",
+    "sell_by": "2026-08-13",
+    "trade_hint": "交易窗口：建议上映前 1–2 日布局，上映后 2–3 日评估票房兑现",
+    "description": "电影/剧集定档上映常驱动相关传媒、IP 周边标的短线波动。请绑定具体股票代码后使用。",
+    "related_stock_codes": "",
+    "source_url": "https://so.eastmoney.com/news/s?keyword=%E6%9A%91%E6%9C%9F%E6%A1%A3%20%E4%B8%8A%E6%98%A0"
+  },
+  {
+    "title": "消费电子新品发布会观察",
+    "event_date": "2026-09-10",
+    "event_type": "potential",
+    "importance": 4,
+    "catalyst_type": "product_launch",
+    "catalyst_label": "发布会/新品",
+    "buy_from": "2026-09-09",
+    "sell_by": "2026-09-12",
+    "trade_hint": "交易窗口：建议发布会前一日布局，发布后 1–2 日评估情绪兑现",
+    "description": "发布会/新品首发常见「买预期、卖事实」。请手动关联具体供应链或品牌代码。",
+    "related_stock_codes": "",
+    "source_url": "https://so.eastmoney.com/news/s?keyword=%E6%B6%88%E8%B4%B9%E7%94%B5%E5%AD%90%20%E5%8F%91%E5%B8%83%E4%BC%9A"
+  },
+  {
+    "title": "中国平安 2026半年报披露",
+    "event_date": "2026-08-21",
+    "event_type": "confirmed",
+    "importance": 3,
+    "catalyst_type": "earnings",
+    "catalyst_label": "财报/业绩",
+    "description": "中国平安（601318）2026半年报预计于 2026-08-21 披露。",
+    "related_stock_codes": "601318",
+    "source_url": "https://data.eastmoney.com/notices/stock/601318.html"
+  },
+  {
+    "title": "五粮液 2026半年报披露",
+    "event_date": "2026-08-29",
+    "event_type": "confirmed",
+    "importance": 3,
+    "catalyst_type": "earnings",
+    "catalyst_label": "财报/业绩",
+    "description": "五粮液（000858）2026半年报预计于 2026-08-29 披露。关注批价回升趋势能否持续。",
+    "related_stock_codes": "000858",
+    "source_url": "https://data.eastmoney.com/notices/stock/000858.html"
+  },
+  {
+    "title": "美联储9月议息会议",
+    "event_date": "2026-09-17",
+    "event_type": "potential",
+    "importance": 3,
+    "catalyst_type": "policy_macro",
+    "catalyst_label": "政策/宏观",
+    "description": "市场预计美联储9月可能降息25bp，对港股和A股外资流向有重大影响。",
+    "related_stock_codes": "",
+    "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+  }
+]
