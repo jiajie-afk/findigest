@@ -8,10 +8,6 @@
         <a href="#caps">能力</a>
         <a href="#frame">工作台</a>
       </nav>
-      <div class="ld-top-actions">
-        <a class="ld-top-pro" href="/pricing" @click="onNavClick($event, '/pricing')">开通 Pro</a>
-        <a class="ld-top-cta" :href="enterHref" @click="onNavClick($event, enterHref)">进入</a>
-      </div>
     </header>
 
     <div class="ld-ticker">
@@ -43,7 +39,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { PRODUCT_STATS, COPY } from '@/data/productStats.js'
-import { onNavClick } from '@/utils/navHref.js'
 import LandingHero from '@/components/landing/LandingHero.vue'
 import LandingEditions from '@/components/landing/LandingEditions.vue'
 import LandingProdesk from '@/components/landing/LandingProdesk.vue'
@@ -86,10 +81,10 @@ const enterHref = computed(() => {
 const modulesBasic = [
   { k: '01', name: '今日', desc: '一屏说清今天该看什么' },
   { k: '02', name: '持仓', desc: '组合成本、盈亏与个股入口' },
-  { k: '03', name: '我的', desc: '定制、画像、事件与完整分析' },
+  { k: '03', name: '我的', desc: '定制、画像、事件与工作区' },
 ]
 const modulesPro = [
-  { k: '01', name: '工作区', desc: '完整分析与专业工具台' },
+  { k: '01', name: '工作区', desc: '简报、估值与专业工具台' },
   { k: '02', name: '事件', desc: '催化窗口与来源可追溯' },
   { k: '03', name: '报告', desc: '历史简报与日差对照' },
 ]
@@ -135,7 +130,7 @@ const stories = {
       { t: '分行业主锚', d: `${COPY.paradigmHonest}，避免用同一把尺量银行与周期股。` },
       { t: '安全边际门禁', d: '只有相对保守估值仍有余量的标的，才有资格进入今日。' },
       { t: '硬回撤护栏', d: '触及你设定的组合/单票回撤线时，风险条强制打断乐观叙事。' },
-      { t: '今日极简', d: '默认只留「低估候选」与「必须处理的风险」，其余沉入完整分析。' },
+      { t: '今日极简', d: '默认只留「低估候选」与「必须处理的风险」，其余沉入工作区。' },
     ],
   },
   valuation: {

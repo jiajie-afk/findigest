@@ -121,13 +121,13 @@ onMounted(async () => {
     // Load profile first, then billing — syncEditionFromEntitlements needs both.
     // user.hydrate's syncEditionStyle is entitlement-gated so Free won't flash Pro Desk.
     user.hydrate()
-    // Deep-link: /app?edition=basic|pro (local switch, no paywall)
+    await billing.hydrate()
+    user.syncEditionFromEntitlements({ silent: true })
+    // Deep-link last so landing「进入基础版」wins over paid-plan hydrate
     const want = String(route.query.edition || '').toLowerCase()
     if (want === 'basic' || want === 'pro') {
       user.setProductEdition(want, { silent: true })
     }
-    billing.hydrate()
-    user.syncEditionFromEntitlements({ silent: true })
     await Promise.all([portfolio.load(), events.load(), ensureStyleCss()])
     user.recalibrate().catch(() => {})
   } else {

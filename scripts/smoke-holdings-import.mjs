@@ -1,4 +1,5 @@
 import { normalizeStockCode } from '../src/utils/stockCode.js'
+import { BROKER_LOGINS } from '../src/data/brokerLogin.js'
 import { parseHoldingsText, rowsToCommit, normalizeExtensionRows } from '../src/services/holdingsImport.js'
 
 const cases = [
@@ -48,6 +49,33 @@ const ext = normalizeExtensionRows({
 })
 if (ext.rows.length !== 1) {
   console.error('FAIL ext', ext)
+  failed++
+}
+
+const em = BROKER_LOGINS.find((b) => b.id === 'eastmoney')
+const ths = BROKER_LOGINS.find((b) => b.id === 'ths')
+const tiger = BROKER_LOGINS.find((b) => b.id === 'tiger')
+if (!em?.webOpens || em.qrOnWeb) {
+  console.error('FAIL eastmoney flags', em)
+  failed++
+}
+if (
+  em?.loginUrl !==
+  'https://passport2.eastmoney.com/pub/login?backurl=https%3A%2F%2Fwww.eastmoney.com%2F'
+) {
+  console.error('FAIL eastmoney personal-center login URL', em?.loginUrl)
+  failed++
+}
+if (em?.holdingsUrl) {
+  console.error('FAIL eastmoney must not redirect to a securities holdings URL', em.holdingsUrl)
+  failed++
+}
+if (ths?.webOpens || tiger?.webOpens) {
+  console.error('FAIL ths/tiger should not open dead web trade')
+  failed++
+}
+if (ths?.loginUrl || tiger?.loginUrl) {
+  console.error('FAIL should not deep-link to personal login centers')
   failed++
 }
 

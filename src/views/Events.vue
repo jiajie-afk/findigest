@@ -5,38 +5,80 @@
         <p class="ev-kicker">催化剂</p>
         <h1 class="ev-title">事件</h1>
         <p class="ev-lead">
-          先看近两周财报预约与催化窗口；有持仓后再对齐到你的票。
+          央视要闻、国际要闻仍是完整列表。对得上你持仓的会标「关我仓」，点名或同业，不是荐股。
         </p>
       </div>
       <div class="ev-mast-side">
         <button type="button" class="ev-ghost" :disabled="events.loading" @click="reload">
-          {{ events.loading ? '同步中…' : '刷新日历' }}
+          {{ events.loading ? '同步中…' : isCctvTab ? '刷新要闻' : '刷新日历' }}
         </button>
         <button type="button" class="ev-cta" @click="openCompose">添加事件</button>
       </div>
     </header>
 
-    <section class="ev-intel" aria-label="本周概览">
-      <div class="ev-intel-cell">
-        <span class="ev-intel-n">{{ events.weekStats.thisWeek }}</span>
-        <span class="ev-intel-l">7 日内披露/催化</span>
-      </div>
-      <div class="ev-intel-cell">
-        <span class="ev-intel-n">{{ events.weekStats.windowOpen }}</span>
-        <span class="ev-intel-l">交易窗口进行中</span>
-      </div>
-      <div class="ev-intel-cell">
-        <span class="ev-intel-n">{{ events.weekStats.tomorrow }}</span>
-        <span class="ev-intel-l">明日披露</span>
-      </div>
-      <div class="ev-intel-cell ev-intel-meta">
-        <span class="ev-intel-l">来源</span>
-        <span class="ev-intel-s">{{ sourceLabel }}</span>
-      </div>
+    <section class="ev-intel" :aria-label="isCctvTab ? (isCctvWorld ? '国际要闻概览' : '央视要闻概览') : '本周概览'">
+      <template v-if="isCctvTab">
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ cctvLaneToday || cctvLane.length }}</span>
+          <span class="ev-intel-l">今日条目</span>
+        </div>
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ cctvLane.length }}</span>
+          <span class="ev-intel-l">{{ isCctvWorld ? '国际' : '国内' }}</span>
+        </div>
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ cctvLaneRelated }}</span>
+          <span class="ev-intel-l">关我仓</span>
+        </div>
+        <div class="ev-intel-cell ev-intel-meta">
+          <span class="ev-intel-l">来源</span>
+          <span class="ev-intel-s">{{ sourceLabel }}</span>
+        </div>
+      </template>
+      <template v-else>
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ events.weekStats.thisWeek }}</span>
+          <span class="ev-intel-l">7 日内披露/催化</span>
+        </div>
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ events.weekStats.windowOpen }}</span>
+          <span class="ev-intel-l">交易窗口进行中</span>
+        </div>
+        <div class="ev-intel-cell">
+          <span class="ev-intel-n">{{ events.weekStats.tomorrow }}</span>
+          <span class="ev-intel-l">明日披露</span>
+        </div>
+        <div class="ev-intel-cell ev-intel-meta">
+          <span class="ev-intel-l">来源</span>
+          <span class="ev-intel-s">{{ sourceLabel }}</span>
+        </div>
+      </template>
     </section>
 
     <div class="ev-toolbar">
       <div class="ev-modes" role="tablist" aria-label="事件范围">
+        <button
+          type="button"
+          role="tab"
+          class="ev-mode"
+          :aria-selected="events.tab === 'cctv'"
+          :class="{ on: events.tab === 'cctv' }"
+          @click="events.tab = 'cctv'"
+        >
+          央视要闻
+          <em>{{ events.cctvDomestic.length }}</em>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="ev-mode"
+          :aria-selected="events.tab === 'cctvWorld'"
+          :class="{ on: events.tab === 'cctvWorld' }"
+          @click="events.tab = 'cctvWorld'"
+        >
+          国际要闻
+          <em>{{ events.cctvWorldItems.length }}</em>
+        </button>
         <button
           type="button"
           role="tab"
@@ -73,7 +115,7 @@
       </div>
 
       <div
-        v-if="events.tab !== 'manual'"
+        v-if="events.tab !== 'manual' && !isCctvTab"
         class="ev-filters"
         role="group"
         aria-label="筛选"
@@ -110,16 +152,22 @@
       </div>
     </div>
 
-    <p v-if="events.tab === 'market'" class="ev-scope">
+    <p v-if="events.tab === 'cctv'" class="ev-scope">
+      含昨晚《新闻联播》官方分条以及央视网国内、财经。列表不裁剪。对上持仓的标「关我仓」，不是买入理由。
+    </p>
+    <p v-else-if="events.tab === 'cctvWorld'" class="ev-scope">
+      含《新闻联播》国际段和央视网国际频道。完整列表保留；对上持仓的同样会标出来。
+    </p>
+    <p v-else-if="events.tab === 'market'" class="ev-scope">
       东方财富预约披露（近 14 天）+ 本地催化库。不是买卖指令，用来排交易窗口。
     </p>
     <p v-else-if="events.tab === 'mine' && !holdingCount" class="ev-scope warn">
       你还没有持仓，所以「我的持仓」为空。
-      <router-link to="/portfolio">去导入持仓</router-link>
+      <router-link to="/portfolio?import=1">去导入持仓</router-link>
       后，会自动对齐日历里相关代码。
     </p>
     <p v-else-if="events.tab === 'mine'" class="ev-scope">
-      已对齐你组合里的 {{ holdingCount }} 只代码；含新闻里抽出的未来催化。
+      已对齐你组合里的 {{ holdingCount }} 只。这里汇总日历、新闻催化，以及要闻里标过「关我仓」的条目。完整联播仍在上面两个标签。
     </p>
 
     <section v-if="events.tab === 'manual' && composing" class="ev-compose" aria-label="添加事件">
@@ -175,11 +223,78 @@
       <p class="ev-empty-t">{{ emptyTitle }}</p>
       <p class="ev-empty-d">{{ emptyDesc }}</p>
       <div class="ev-empty-actions">
-        <button type="button" class="btn bp sm" :disabled="events.loading" @click="reload">刷新日历</button>
-        <router-link class="ev-ghost" to="/portfolio">去持仓</router-link>
-        <button type="button" class="ev-ghost" @click="openCompose">手动添加</button>
+        <button
+          v-if="isCctvTab"
+          type="button"
+          class="btn bp sm"
+          :disabled="events.loading"
+          @click="reload"
+        >
+          刷新要闻
+        </button>
+        <template v-else>
+          <router-link v-if="!holdingCount" class="btn bp sm" to="/portfolio?import=1">导入持仓</router-link>
+          <button v-else type="button" class="btn bp sm" :disabled="events.loading" @click="reload">刷新日历</button>
+          <router-link v-if="holdingCount" class="ev-ghost" to="/portfolio">去持仓</router-link>
+          <button type="button" class="ev-ghost" @click="openCompose">手动添加</button>
+        </template>
       </div>
     </div>
+
+    <ol v-else-if="isCctvTab" class="ev-list" :aria-label="isCctvWorld ? '国际要闻' : '央视要闻'">
+      <li
+        v-for="(e, idx) in list"
+        :key="e.id || e.title + idx"
+        class="ev-row"
+        :class="{ 'ev-row--mine': e.relatedHoldings?.length }"
+      >
+        <div class="ev-date">
+          <span class="ev-date-d">{{ String(e.rank || idx + 1).padStart(2, '0') }}</span>
+          <span class="ev-date-m">{{ e.tierLabel || '简讯' }}</span>
+          <span class="ev-eta" :data-soon="e.tier === 's' || e.tier === 'a' ? '1' : '0'">{{
+            e.timeLabel || ''
+          }}</span>
+        </div>
+        <div class="ev-body">
+          <div class="ev-row-top">
+            <div class="ev-tags">
+              <span class="ev-badge" :data-kind="e.tier || 'c'">{{ e.tierLabel || '简讯' }}</span>
+              <span v-if="e.relatedHoldings?.length" class="ev-badge" data-kind="mine">关我仓</span>
+              <span v-if="e.catalyst_label" class="ev-cat">{{ e.catalyst_label }}</span>
+            </div>
+          </div>
+          <h3 class="ev-row-title">
+            <a
+              v-if="sourceOf(e).url"
+              class="ev-title-link"
+              :href="sourceOf(e).url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ e.title }}</a>
+            <template v-else>{{ e.title }}</template>
+          </h3>
+          <div v-if="e.relatedHoldings?.length" class="ev-codes">
+            <router-link
+              v-for="h in e.relatedHoldings"
+              :key="h.code"
+              class="ev-code"
+              :to="`/stock/${h.code}`"
+            >{{ h.strength === 'strong' ? '点名' : '行业' }} · {{ h.name }}</router-link>
+          </div>
+          <p v-if="e.description" class="ev-desc">{{ e.description }}</p>
+          <div class="ev-foot">
+            <a
+              v-if="sourceOf(e).url"
+              class="ev-src"
+              :href="sourceOf(e).url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >打开央视原文</a>
+            <span v-else class="ev-src-miss">无来源</span>
+          </div>
+        </div>
+      </li>
+    </ol>
 
     <ol v-else class="ev-list" aria-label="事件列表">
       <li
@@ -242,7 +357,7 @@
         </div>
       </li>
     </ol>
-    <p v-if="list.length && listHidden" class="ev-more">
+    <p v-if="!isCctvTab && list.length && listHidden" class="ev-more">
       已显示 {{ list.length }} 条 · 另有 {{ listHidden }} 条未展开。
       <button v-if="timeScope === 'week'" type="button" class="ev-more-btn" @click="timeScope = 'all'">
         看全部日期
@@ -296,7 +411,24 @@ const form = reactive({
 
 const holdingCount = computed(() => portfolio.allHoldings?.length || 0)
 
+const isCctvWorld = computed(() => events.tab === 'cctvWorld')
+const isCctvTab = computed(() => events.tab === 'cctv' || isCctvWorld.value)
+
+const cctvLane = computed(() =>
+  isCctvWorld.value ? events.cctvWorldItems : events.cctvDomestic,
+)
+
+const cctvLaneRelated = computed(
+  () => cctvLane.value.filter((e) => (e.relatedHoldings || []).length).length,
+)
+
+const cctvLaneToday = computed(() => {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
+  return cctvLane.value.filter((e) => String(e.event_date || '').slice(0, 10) === today).length
+})
+
 const scopedRows = computed(() => {
+  if (isCctvTab.value) return cctvLane.value
   let rows =
     events.tab === 'manual'
       ? events.manualEvents
@@ -323,6 +455,12 @@ const listTotal = computed(() => scopedRows.value.length)
 const listHidden = computed(() => Math.max(0, listTotal.value - list.value.length))
 
 const sourceLabel = computed(() => {
+  if (isCctvTab.value) {
+    if (events.cctvStatus.error && !cctvLane.value.length) return events.cctvStatus.error
+    const n = cctvLane.value.length
+    if (!n) return '央视网公开接口'
+    return isCctvWorld.value ? `央视国际 ${n} 条` : `新闻联播+国内 ${n} 条`
+  }
   const n = events.liveStatus.count || 0
   if (n > 0) return `东财预约 ${n} 条 · 已混本地库`
   if (events.liveStatus.error) return `日历暂不可用 · 显示本地库 ${events.catalogEvents.length}`
@@ -330,16 +468,24 @@ const sourceLabel = computed(() => {
 })
 
 const emptyTitle = computed(() => {
+  if (isCctvWorld.value) return events.cctvStatus.error ? '国际要闻暂时拉不到' : '还没有拉到国际要闻'
+  if (events.tab === 'cctv') return events.cctvStatus.error ? '央视要闻暂时拉不到' : '还没有拉到要闻'
   if (events.tab === 'mine') return holdingCount.value ? '持仓还没对上日历' : '先导入持仓'
   if (events.tab === 'manual') return '还没有手记事件'
-  return '日历日历暂时拉不到'
+  return '日历暂时拉不到'
 })
 
 const emptyDesc = computed(() => {
+  if (isCctvWorld.value) {
+    return '点刷新重试。国际段来自新闻联播和央视国际频道，不接东财快讯。'
+  }
+  if (events.tab === 'cctv') {
+    return '点刷新重试。先看新闻联播当晚分条，再补央视网国内与财经。不转写电视全文。'
+  }
   if (events.tab === 'mine') {
     return holdingCount.value
-      ? '试试刷新，或等持仓代码出现在近两周披露名单里。'
-      : '导入持仓后，「我的持仓」会自动筛出相关财报与催化。'
+      ? '日历没对上时，联播里标过「关我仓」的也会出现在这里。完整要闻仍在上面两个标签。'
+      : '导入持仓后，「我的持仓」会汇总相关财报、催化和关我仓的要闻。'
   }
   if (events.tab === 'manual') return '写清日期、代码和交易窗口。'
   return '点刷新重试代理；或先看本地催化库（刷新后仍空再反馈）。'
@@ -359,6 +505,9 @@ function nameOf(code, e) {
 }
 
 function sourceOf(e) {
+  if (e?._source === 'cctv' && e.source_url) {
+    return { url: e.source_url, source: '央视网' }
+  }
   return resolveEventSource(e, codesOf(e)[0] || '')
 }
 
@@ -445,6 +594,13 @@ function add() {
 
 async function reload() {
   await events.refreshLive()
+  if (isCctvTab.value) {
+    const n = cctvLane.value.length
+    const label = isCctvWorld.value ? '国际要闻' : '央视要闻'
+    if (n) user.toast(`已同步${label} ${n} 条`)
+    else user.toast(events.cctvStatus.error || `暂无${label}`)
+    return
+  }
   if (!events.liveStatus.count && events.catalogEvents.length) {
     user.toast(`直播日历暂无，已显示本地库 ${events.catalogEvents.length} 条`)
   } else if (events.liveStatus.count) {
@@ -455,8 +611,10 @@ async function reload() {
 }
 
 onMounted(async () => {
-  if (!events.marketEvents.length && !events.loading) {
+  if (!events.marketEvents.length && !events.cctvItems.length && !events.loading) {
     await events.load()
+  } else if (!events.cctvItems.length) {
+    events.loadCctvNews?.().catch(() => {})
   }
 })
 </script>
@@ -568,19 +726,27 @@ onMounted(async () => {
 .ev-intel {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  gap: 0;
   margin-bottom: 22px;
-  background: var(--sep);
-  border: 1px solid var(--sep);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--sep);
+  border-bottom: 1px solid var(--sep);
 }
 
 .ev-intel-cell {
-  background: var(--bg);
-  padding: 14px 12px;
+  background: transparent;
+  padding: 14px 12px 14px 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-height: 72px;
+  border-right: 1px solid var(--sep);
+}
+
+.ev-intel-cell:last-child {
+  border-right: none;
+  padding-right: 0;
 }
 
 .ev-intel-n {
@@ -721,6 +887,53 @@ onMounted(async () => {
 
 .ev-scope a:hover {
   text-decoration: underline;
+}
+
+.ev-desk + .ev-desk {
+  margin-top: 36px;
+  padding-top: 22px;
+  border-top: 1px solid var(--sep);
+}
+
+.ev-desk-h {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.ev-desk-copy {
+  min-width: 0;
+}
+
+.ev-desk-k {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--tt);
+}
+
+.ev-desk-t {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.6vw, 1.7rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--tp);
+}
+
+.ev-desk-n {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  line-height: 1;
+  padding-bottom: 4px;
 }
 
 .ev-compose {
@@ -900,6 +1113,13 @@ onMounted(async () => {
   border-bottom: 1px solid var(--sep);
 }
 
+.ev-row--mine {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .ev-date {
   display: flex;
   flex-direction: column;
@@ -964,6 +1184,38 @@ onMounted(async () => {
 .ev-badge[data-kind='potential'] {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.ev-badge[data-kind='s'] {
+  color: #1a1610;
+  background: var(--accent);
+}
+
+.ev-badge[data-kind='a'] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.ev-badge[data-kind='b'],
+.ev-badge[data-kind='c'] {
+  color: var(--ts);
+  border-color: var(--sep);
+}
+
+.ev-badge[data-kind='mine'] {
+  color: #1a1610;
+  background: var(--accent);
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.ev-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ev-title-link:hover {
+  color: var(--accent);
 }
 
 .ev-cat {
@@ -1103,6 +1355,14 @@ onMounted(async () => {
   }
   .ev-intel {
     grid-template-columns: 1fr;
+  }
+  .ev-intel-cell {
+    border-right: none;
+    border-bottom: 1px solid var(--sep);
+    padding-right: 0;
+  }
+  .ev-intel-cell:last-child {
+    border-bottom: none;
   }
 }
 

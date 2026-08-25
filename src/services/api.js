@@ -4,6 +4,7 @@ import { calculateValuation, resolveEarnings } from './valuation.js'
 import { getStockName } from '@/data/stock_names.js'
 import { peekFinancial, assessValuability } from '@/data/loader.js'
 import { allowJsonpFallback, proxyFetch, withDataMeta } from './apiClient.js'
+import { eastmoneySecid, scaleEastmoneyPrice } from './quotesRefresh.js'
 
 const MAX_CONCURRENT = 3
 let activeCount = 0
@@ -227,36 +228,34 @@ export function fResearch(name, cb) {
 }
 
 export async function fetchQuote(code, ex = 'SH') {
-  const secid =
-    ex === 'HK'
-      ? `116.${code}`
-      : code.startsWith('6') || code.startsWith('9')
-        ? `1.${code}`
-        : `0.${code}`
+  const secid = eastmoneySecid(code, ex)
+  if (!secid) return null
   const cb = `cb_q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
   const buildUrl = (cbName) =>
-    `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f169,f170,f46,f60,f168&cb=${cbName}`
+    `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f59,f152,f169,f170,f60,f168&cb=${cbName}`
   const meta = await fetchPreferProxy(buildUrl, cb, 8000)
   const d = metaData(meta)
   if (!d?.data) return null
   const x = d.data
-  const price = (x.f43 ?? 0) / 100
+  const places = x.f59 ?? x.f152
+  const price = scaleEastmoneyPrice(x.f43, places)
+  if (!(price > 0)) return null
   const change_pct = (x.f170 ?? 0) / 100
   const asOf = meta.asOf || new Date().toISOString()
   return {
     price,
     change_pct,
     name: x.f58 || '',
-    high: (x.f44 ?? 0) / 100,
-    low: (x.f45 ?? 0) / 100,
-    open: (x.f46 ?? 0) / 100,
+    high: scaleEastmoneyPrice(x.f44, places),
+    low: scaleEastmoneyPrice(x.f45, places),
+    open: scaleEastmoneyPrice(x.f46, places),
     asOf,
     source: meta.source || 'proxy',
   }
 }
 
 export async function fetchQuoteCached(code, ex = 'SH') {
-  const key = `${code}_${ex}`
+  const key = eastmoneySecid(code, ex) || `${code}_${ex}`
   const cached = quoteCache.get(key)
   if (cached && Date.now() - cached.ts < QUOTE_TTL) {
     return { ...cached.data, source: 'cache', asOf: cached.data.asOf || new Date(cached.ts).toISOString() }

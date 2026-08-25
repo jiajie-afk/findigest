@@ -21,7 +21,7 @@
             {{ fmtScore(portfolio.stockAnalyses[h.code].sent.total) }}
           </strong>
         </div>
-        <div v-else class="hold-pending">待采集</div>
+        <div v-else class="hold-pending">待分析</div>
       </div>
       <button
         v-if="portfolio.allHoldings.length > HOLDINGS_WINDOW"

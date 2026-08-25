@@ -2,13 +2,19 @@
   <div class="page">
     <div class="page-head">
       <div>
-        <h2 class="pt">完整分析</h2>
+        <h2 class="pt">工作区</h2>
         <p class="pt-sub">
           进阶工作区 · <router-link to="/app">返回今日</router-link>
           · <router-link to="/more">我的</router-link>
         </p>
       </div>
     </div>
+    <section v-if="isEmptyHoldings" class="ws-empty card">
+      <h3>先把持仓放进来</h3>
+      <p>工作区只读你的股票。没有持仓，统计和简报都是空的。</p>
+      <router-link class="btn bp" to="/portfolio?import=1">导入持仓</router-link>
+    </section>
+    <template v-else>
     <div v-if="showOnboardingGate" class="gate-banner">
       <div>
         <strong>观察模式</strong>
@@ -38,6 +44,7 @@
         <DashboardReports />
       </div>
     </details>
+    </template>
   </div>
 </template>
 
@@ -93,6 +100,7 @@ const continueScenarioTo = computed(() => {
 })
 
 const financialMap = computed(() => portfolio.financialData || {})
+const isEmptyHoldings = computed(() => !(portfolio.allHoldings || []).length)
 
 onMounted(async () => {
   await user.recalibrate()
@@ -100,6 +108,10 @@ onMounted(async () => {
 })
 
 async function genReport() {
+  if (!(portfolio.allHoldings || []).length) {
+    user.toast('先导入持仓，再生成分析')
+    return
+  }
   // Mirror ButlerHome: Free + API key must not bypass Pro LLM paywall
   const wantLlm = !!(user.aiConfig?.enabled && user.aiConfig?.apiKey)
   if (wantLlm && !billing.canUseLlm) {
@@ -142,6 +154,23 @@ async function genReport() {
 </script>
 
 <style scoped>
+.ws-empty {
+  padding: 28px 24px;
+  margin-top: 8px;
+}
+.ws-empty h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--tp);
+}
+.ws-empty p {
+  margin: 0 0 16px;
+  max-width: 28rem;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ts);
+}
 .gate-banner {
   display: flex;
   flex-wrap: wrap;

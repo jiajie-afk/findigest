@@ -3,10 +3,11 @@ import { shallowRef, ref, computed, triggerRef } from 'vue'
 import { warmStockData, peekFinancial, peekPrice, getFinancial } from '@/data/loader.js'
 import { calculateValuation } from '@/services/valuation.js'
 import { calculatePosition } from '@/services/position.js'
-import { fetchAllDeep, hydrateFinancial } from '@/services/api.js'
+import { fetchAllDeep, fetchQuoteCached, hydrateFinancial } from '@/services/api.js'
 import { analyzeNews } from '@/services/analysis.js'
-import { vaultGet, vaultSet, emptyPortfolio, getActiveAccountId } from '@/services/vault.js'
+import { vaultGet, vaultSet, emptyPortfolio, starterPortfolio, getActiveAccountId } from '@/services/vault.js'
 import { apiUrl } from '@/services/apiClient.js'
+import { inferHoldingEx } from '@/services/quotesRefresh.js'
 
 export const usePortfolioStore = defineStore('portfolio', () => {
   const portfolios = ref([])
@@ -90,7 +91,12 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
       // Private vault only — never fall back to shared demo portfolios.json
       const saved = vaultGet('fd_portfolios', null)
-      portfolios.value = Array.isArray(saved) && saved.length ? saved : emptyPortfolio()
+      if (Array.isArray(saved) && saved.length) {
+        portfolios.value = saved
+      } else {
+        portfolios.value = starterPortfolio()
+        persistPortfolios()
+      }
 
       const savedAnalyses = vaultGet('fd_analyses', null)
       if (savedAnalyses && typeof savedAnalyses === 'object') {
@@ -149,15 +155,56 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     return h?.name || db.value[code] || code
   }
 
+  function holdingEx(holding, code) {
+    return inferHoldingEx(code || holding?.code, holding?.ex)
+  }
+
+  function applyLiveQuote(code, quote, name) {
+    if (!quote || !(Number(quote.price) > 0)) return false
+    priceCache.value = { ...priceCache.value, [code]: quote.price }
+    triggerRef(priceCache)
+    const staticFin = peekFinancial(code) || financialData.value[code] || {}
+    setFinancial(
+      code,
+      hydrateFinancial(
+        {
+          ...staticFin,
+          ...(financialData.value[code] || {}),
+          price: quote.price,
+          change_pct: quote.change_pct,
+          asOf: quote.asOf || null,
+          source: quote.source || null,
+          quoteAsOf: quote.asOf || null,
+          quoteSource: quote.source || null,
+        },
+        code,
+        name,
+      ),
+    )
+    return true
+  }
+
+  async function refreshHoldingQuote(holding) {
+    const code = holding?.code
+    if (!code) return false
+    const quote = await fetchQuoteCached(code, holdingEx(holding, code))
+    return applyLiveQuote(code, quote, nameOf(code))
+  }
+
   async function analyzeStock(code) {
     const name = nameOf(code)
     const holding = findHolding(code)
-    const ex = holding?.ex || (code.startsWith('6') || code.startsWith('9') ? 'SH' : 'SZ')
+    const ex = holdingEx(holding, code)
 
     setAnalysis(code, { ...(stockAnalyses.value[code] || {}), loading: true })
     try {
       const staticFin = peekFinancial(code) || (await getFinancial(code)) || {}
-      const news = await fetchAllDeep(code, name, ex, (dbg) => setFetchDebug(code, dbg))
+      let liveQuote = null
+      const news = await fetchAllDeep(code, name, ex, (dbg) => {
+        liveQuote = dbg?.quote || null
+        setFetchDebug(code, dbg)
+      })
+      applyLiveQuote(code, liveQuote, name)
       const fin = hydrateFinancial(
         {
           ...staticFin,
@@ -184,21 +231,15 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
-  async function autoFetchAll() {
-    if (autoFetching.value) return
-    const pending = allHoldings.value.filter((h) => !stockAnalyses.value[h.code]?.sent)
-    if (!pending.length) return
-    autoFetching.value = true
-    fetchProgress.value = { done: 0, total: pending.length, current: '' }
-
+  async function runBatch(items, worker) {
     const BATCH = 3
-    for (let i = 0; i < pending.length; i += BATCH) {
-      const batch = pending.slice(i, i + BATCH)
+    for (let i = 0; i < items.length; i += BATCH) {
+      const batch = items.slice(i, i + BATCH)
       await Promise.allSettled(
-        batch.map(async (h) => {
-          fetchProgress.value.current = h.name
+        batch.map(async (item) => {
+          fetchProgress.value.current = item.name || item.code || ''
           try {
-            await analyzeStock(h.code)
+            await worker(item)
           } catch {
             /* continue */
           }
@@ -206,7 +247,34 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         }),
       )
     }
-    autoFetching.value = false
+  }
+
+  async function autoFetchAll() {
+    if (autoFetching.value) return { skipped: true, reason: 'busy', quotes: 0, analyzed: 0 }
+    const holdings = allHoldings.value
+    if (!holdings.length) return { skipped: true, reason: 'empty', quotes: 0, analyzed: 0 }
+
+    autoFetching.value = true
+    let quotes = 0
+    let analyzed = 0
+    try {
+      fetchProgress.value = { done: 0, total: holdings.length, current: '' }
+      await runBatch(holdings, async (h) => {
+        if (await refreshHoldingQuote(h)) quotes += 1
+      })
+
+      const pending = holdings.filter((h) => !stockAnalyses.value[h.code]?.sent)
+      if (pending.length) {
+        fetchProgress.value = { done: 0, total: pending.length, current: '' }
+        await runBatch(pending, async (h) => {
+          await analyzeStock(h.code)
+          analyzed += 1
+        })
+      }
+      return { skipped: false, reason: 'ok', quotes, analyzed }
+    } finally {
+      autoFetching.value = false
+    }
   }
 
   function positionFor(code) {
@@ -255,7 +323,11 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     const p = portfolios.value.find((x) => x.id === portfolioId)
     if (!p) return
     const id = Date.now() + Math.floor(Math.random() * 1000)
-    p.holdings.push({ id, ...holding })
+    p.holdings.push({
+      id,
+      ...holding,
+      ex: inferHoldingEx(holding.code, holding.ex),
+    })
     persistPortfolios()
   }
 
@@ -281,14 +353,14 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         existing.shares = shares
         if (Number.isFinite(cost)) existing.cost = cost
         if (row.name) existing.name = row.name
-        if (row.ex) existing.ex = row.ex
+        if (row.ex) existing.ex = inferHoldingEx(code, row.ex)
         updated += 1
       } else {
         p.holdings.push({
           id: now + i,
           code,
           name: row.name || code,
-          ex: row.ex || 'SH',
+          ex: inferHoldingEx(code, row.ex),
           shares,
           cost: Number.isFinite(cost) ? cost : 0,
         })

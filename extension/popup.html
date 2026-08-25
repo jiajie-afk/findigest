@@ -84,16 +84,19 @@
   </head>
   <body>
     <h1>FinDigest 持仓导入</h1>
-    <p>必须先登录<strong>网页交易</strong>（东财佣金宝 / 同花顺网上交易），不是行情软件。不采集账号密码。</p>
+    <p>东财按钮打开个人中心登录，不会读取证券持仓。扫码在券商电脑交易端完成。不采集账号密码。</p>
     <div class="row">
-      <button class="ghost" id="open-em" type="button">打开东财登录</button>
-      <button class="ghost" id="open-ths" type="button">打开同花顺登录</button>
+      <button class="ghost" id="open-em" type="button">打开东财个人中心</button>
+      <button class="ghost" id="open-ths" type="button">同花顺说明</button>
     </div>
+    <button class="ghost" id="open-tiger" type="button">老虎说明</button>
     <button class="primary" id="scrape">读取本页持仓</button>
     <button class="ghost" id="copy" disabled>复制 JSON</button>
     <label>
       发送到
       <select id="target">
+        <option value="https://findigest.cn/portfolio?import=extension">findigest.cn</option>
+        <option value="https://www.findigest.cn/portfolio?import=extension">www.findigest.cn</option>
         <option value="http://127.0.0.1:5173/portfolio?import=extension">本地 127.0.0.1:5173</option>
         <option value="http://localhost:5173/portfolio?import=extension">本地 localhost:5173</option>
         <option value="https://findigest-three.vercel.app/portfolio?import=extension">线上 Vercel</option>

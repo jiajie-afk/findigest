@@ -258,7 +258,7 @@ const canSubmit = computed(() => {
   if (auth.busy || submitting.value) return false
   if (mode.value === 'login') return true
   if (!otpReady.value) return false
-  if ((mode.value === 'register' || mode.value === 'reset') && !strength.ok) return false
+  if ((mode.value === 'register' || mode.value === 'reset') && !strength.value.ok) return false
   return true
 })
 

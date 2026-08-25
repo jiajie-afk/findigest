@@ -8,6 +8,8 @@ import {
   daysUntil,
   windowStatus,
 } from '@/services/earningsCalendar.js'
+import { fetchCctvNews } from '@/services/cctvNews.js'
+import { annotateNewsItems } from '@/services/holdingsNewsMatch.js'
 
 const MANUAL_BASE = 'fd_manual_events'
 
@@ -77,10 +79,39 @@ export const useEventStore = defineStore('event', () => {
   const notifications = ref([])
   const reports = ref([])
   const filter = ref('all')
-  /** market | mine | manual */
-  const tab = ref('market')
+  /** cctv | cctvWorld | market | mine | manual */
+  const tab = ref('cctv')
   const loading = ref(false)
   const liveStatus = ref({ source: '', asOf: '', error: '', count: 0 })
+  const cctvItems = ref([])
+  const cctvStatus = ref({
+    asOf: '',
+    error: '',
+    counts: { s: 0, a: 0, b: 0, c: 0, today: 0, world: 0, jingji: 0, economy: 0, finance: 0, china: 0, domestic: 0, xwlb: 0 },
+  })
+
+  const holdingBook = computed(() => {
+    const portfolio = usePortfolioStore()
+    return (portfolio.allHoldings || []).map((h) => ({
+      code: String(h.code),
+      name: h.name || '',
+    }))
+  })
+
+  const cctvAnnotated = computed(() =>
+    annotateNewsItems(cctvItems.value, holdingBook.value),
+  )
+
+  const cctvDomestic = computed(() =>
+    cctvAnnotated.value.filter((e) => e.lane !== 'world' && e.channel !== 'world'),
+  )
+  const cctvWorldItems = computed(() =>
+    cctvAnnotated.value.filter((e) => e.lane === 'world' || e.channel === 'world'),
+  )
+
+  const cctvRelated = computed(() =>
+    cctvAnnotated.value.filter((e) => (e.relatedHoldings || []).length),
+  )
 
   const marketEvents = computed(() =>
     mergeUnique([liveEarnings.value, catalogEvents.value]),
@@ -92,7 +123,7 @@ export const useEventStore = defineStore('event', () => {
     if (!codes.size) return []
     const matched = marketEvents.value.filter((e) => codesOf(e).some((c) => codes.has(c)))
     const fromNews = fromNewsAnalyses(portfolio)
-    return mergeUnique([matched, fromNews, autoEvents.value])
+    return mergeUnique([matched, fromNews, autoEvents.value, fromCctvMatches(cctvRelated.value)])
   })
 
   const filteredMarket = computed(() => {
@@ -156,6 +187,24 @@ export const useEventStore = defineStore('event', () => {
     }
   }
 
+  function fromCctvMatches(items) {
+    return (items || []).map((e) => {
+      const hits = e.relatedHoldings || []
+      const strong = hits.some((h) => h.strength === 'strong')
+      return {
+        ...e,
+        event_type: 'confirmed',
+        importance: e.tier === 's' ? 5 : e.tier === 'a' ? 4 : 3,
+        catalyst_type: 'policy_macro',
+        catalyst_label: strong ? '关我仓·点名' : '关我仓·行业',
+        related_stock_codes: hits.map((h) => h.code).join(','),
+        related_stock_name: hits.map((h) => h.name).join('、'),
+        trade_hint: '',
+        _source: 'cctv',
+      }
+    })
+  }
+
   function syncMineFromHoldings() {
     const portfolio = usePortfolioStore()
     const codes = new Set((portfolio.allHoldings || []).map((h) => String(h.code)))
@@ -174,6 +223,7 @@ export const useEventStore = defineStore('event', () => {
       manualEvents.value = []
       notifications.value = []
       reports.value = []
+      cctvItems.value = []
       return
     }
 
@@ -181,10 +231,8 @@ export const useEventStore = defineStore('event', () => {
     manualEvents.value = Array.isArray(savedManual) ? savedManual : []
 
     const portfolio = usePortfolioStore()
-    if ((portfolio.allHoldings || []).length) {
-      if (tab.value !== 'manual') tab.value = 'mine'
-    } else if (tab.value === 'mine') {
-      tab.value = 'market'
+    if (tab.value === 'mine' && !(portfolio.allHoldings || []).length) {
+      tab.value = 'cctv'
     }
 
     // Catalog first (instant UI), live calendar in background — never block app shell
@@ -201,12 +249,79 @@ export const useEventStore = defineStore('event', () => {
     loadLiveEarnings()
       .then(() => syncMineFromHoldings())
       .catch(() => {})
+    loadCctvNews().catch(() => {})
+  }
+
+  async function loadCctvNews() {
+    try {
+      const res = await fetchCctvNews()
+      cctvItems.value = (res.items || []).map((it) => ({
+        id: `cctv-${it.id}`,
+        title: it.title,
+        description: it.brief,
+        source_url: it.url,
+        source: '央视网',
+        event_date: it.date,
+        catalyst_label: it.channelLabel,
+        channel: it.channel,
+        lane: it.lane || (it.channel === 'world' ? 'world' : 'domestic'),
+        event_type: 'confirmed',
+        rank: it.rank,
+        score: it.score,
+        tier: it.tier,
+        tierLabel: it.tierLabel,
+        timeLabel: it.clock,
+        _source: 'cctv',
+      }))
+      cctvStatus.value = {
+        asOf: res.asOf || '',
+        error: res.error || '',
+        counts: res.counts || {
+          s: 0,
+          a: 0,
+          b: 0,
+          c: 0,
+          today: 0,
+          world: 0,
+          jingji: 0,
+          economy: 0,
+          finance: 0,
+          china: 0,
+          domestic: 0,
+          xwlb: 0,
+        },
+      }
+    } catch (e) {
+      cctvItems.value = []
+      cctvStatus.value = {
+        asOf: '',
+        error: e?.message || '央视要闻暂时拉不到',
+        counts: {
+          s: 0,
+          a: 0,
+          b: 0,
+          c: 0,
+          today: 0,
+          world: 0,
+          jingji: 0,
+          economy: 0,
+          finance: 0,
+          china: 0,
+          domestic: 0,
+          xwlb: 0,
+        },
+      }
+    }
   }
 
   async function refreshLive() {
     loading.value = true
-    await loadLiveEarnings()
-    syncMineFromHoldings()
+    if (tab.value === 'cctv' || tab.value === 'cctvWorld') {
+      await loadCctvNews()
+    } else {
+      await loadLiveEarnings()
+      syncMineFromHoldings()
+    }
     loading.value = false
   }
 
@@ -266,6 +381,12 @@ export const useEventStore = defineStore('event', () => {
     mineEvents,
     autoEvents,
     manualEvents,
+    cctvItems,
+    cctvAnnotated,
+    cctvDomestic,
+    cctvWorldItems,
+    cctvRelated,
+    cctvStatus,
     notifications,
     reports,
     filter,
@@ -279,6 +400,7 @@ export const useEventStore = defineStore('event', () => {
     unreadCount,
     load,
     refreshLive,
+    loadCctvNews,
     addManual,
     removeManual,
     markAllRead,

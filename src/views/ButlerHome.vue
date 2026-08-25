@@ -7,6 +7,19 @@
       </p>
     </header>
 
+    <section v-if="isEmptyHoldings" class="bh-hero bh-empty">
+      <h1 class="bh-h1">先把持仓<em>放进来</em></h1>
+      <p class="bh-lead">
+        今日简报只读你的股票。没有持仓，就没有该看的事。先导入，再出简报。
+      </p>
+      <div class="bh-actions">
+        <button class="btn bp" type="button" @click="openImport('paste')">导入持仓</button>
+        <button class="btn bs" type="button" @click="openImport('manual')">手动录入</button>
+      </div>
+      <p class="bh-empty-note">可手动填一只，或粘贴券商表格、上传 CSV、拍持仓截图。开通 Pro、答画像都等有股票以后再说。</p>
+    </section>
+
+    <template v-if="!isEmptyHoldings">
     <section v-if="billing.canUseProHud" class="pro-hud" aria-label="专业台指标">
       <a class="pro-hud-cell hud-panel" href="/workspace" @click="onNavClick($event, '/workspace', router)">
         <p class="pro-hud-lab">估值分</p>
@@ -115,7 +128,7 @@
           class="bh-more-link"
           href="/workspace"
           @click="onNavClick($event, '/workspace', router)"
-        >完整分析</a>
+        >工作区</a>
         <a
           v-else
           class="bh-more-link"
@@ -124,6 +137,38 @@
         >进工作区</a>
       </div>
       <p v-if="feedbackNote" class="bh-cal">你标过的偏好：{{ feedbackNote }}</p>
+    </section>
+
+    <section class="bh-related" aria-label="跟仓有关的要闻">
+      <h2 class="bh-sec">跟仓有关的要闻</h2>
+      <p class="bh-related-lead">完整联播仍在事件页。这里只抽出对上你持仓的，不是买入理由。</p>
+      <ol v-if="relatedCctv.length" class="bh-list">
+        <li v-for="(e, i) in relatedCctv" :key="e.id || i">
+          <span class="bh-idx">{{ String(i + 1).padStart(2, '0') }}</span>
+          <div>
+            <p class="bh-item-t">{{ e.title }}</p>
+            <p class="bh-item-s">{{ relatedLabel(e) }}</p>
+            <div class="bh-item-links">
+              <a
+                v-for="h in (e.relatedHoldings || []).slice(0, 3)"
+                :key="h.code"
+                class="bh-link"
+                :href="`/stock/${h.code}`"
+                @click="onNavClick($event, `/stock/${h.code}`, router)"
+              >{{ h.name }}</a>
+              <a
+                v-if="e.source_url"
+                class="bh-link"
+                :href="e.source_url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >原文</a>
+            </div>
+          </div>
+        </li>
+      </ol>
+      <p v-else class="bh-related-empty">{{ relatedEmpty }}</p>
+      <a class="bh-more-link" href="/events" @click="onNavClick($event, '/events', router)">看全部要闻</a>
     </section>
 
     <section v-if="showPaywall && !billing.localFreePro" class="bh-paywall" aria-live="polite">
@@ -211,6 +256,9 @@
       简报为研究整理，非投资建议 · {{ paradigmHonest }}
       <a href="/limits" @click="onNavClick($event, '/limits', router)">已知局限</a>
     </p>
+    </template>
+
+    <ImportHoldingsWizard v-model="showImport" :start-tab="importStartTab" />
   </div>
 </template>
 
@@ -239,6 +287,7 @@ import {
   stashPositionSuggestion,
 } from '@/services/decisionBridge.js'
 import BriefingFeedbackButtons from '@/components/common/BriefingFeedbackButtons.vue'
+import ImportHoldingsWizard from '@/components/portfolio/ImportHoldingsWizard.vue'
 
 const user = useUserStore()
 const portfolio = usePortfolioStore()
@@ -253,6 +302,27 @@ const wantLlm = ref(false)
 const wantLlmRetry = ref(false)
 const briefingError = ref('')
 const showPaywall = ref(false)
+const showImport = ref(false)
+const importStartTab = ref('paste')
+const isEmptyHoldings = computed(() => !(portfolio.allHoldings || []).length)
+
+const relatedCctv = computed(() => (events.cctvRelated || []).slice(0, 6))
+
+const relatedEmpty = computed(() => {
+  if (events.cctvStatus?.error && !events.cctvItems.length) return events.cctvStatus.error
+  if (!events.cctvItems.length) return '要闻还在同步。完整列表在事件页。'
+  return '这批要闻还没对上你的股票名或行业。宏观条不自动当成买入理由。'
+})
+
+function relatedLabel(e) {
+  const hits = e.relatedHoldings || []
+  return hits.map((h) => h.why || h.name).join(' · ')
+}
+
+function openImport(which = 'paste') {
+  importStartTab.value = which === 'manual' ? 'manual' : 'paste'
+  showImport.value = true
+}
 const remindDismissed = ref(false)
 const latestBriefing = ref(loadLatestBriefing())
 const prevBriefing = ref(loadPrevBriefing())
@@ -358,7 +428,7 @@ const hud = computed(() => {
   return {
     valuationLabel: qAvg == null ? '—' : qAvg.toFixed(0),
     valuationPct: qAvg == null ? 0 : Math.max(4, Math.min(100, qAvg)),
-    valuationHint: qN ? `持仓均值 · ${qN} 只有分` : '导入持仓并采集后显示',
+    valuationHint: qN ? `持仓均值 · ${qN} 只有分` : '导入持仓并刷新后显示',
     positionLabel: posAvg == null ? '—' : `${posAvg.toFixed(0)}%`,
     positionPct: posAvg == null ? 0 : Math.max(4, Math.min(100, posAvg)),
     positionHint: posN ? '情绪+基本面建议仓位均值' : '分析未就绪',
@@ -368,6 +438,7 @@ const hud = computed(() => {
 })
 
 onMounted(() => {
+  if (!events.cctvItems.length) events.loadCctvNews?.().catch(() => {})
   runRevisitPush(
     {
       report_hour: user.report_hour,
@@ -548,7 +619,7 @@ async function markItem(item, action) {
 }
 .bh--pro .bh-pro-strip {
   margin-bottom: 18px;
-  background: var(--panel, #0c0f12);
+  background: transparent;
 }
 .bh--pro .bh-pro-edition {
   font-family: var(--mono, ui-monospace, monospace);
@@ -632,6 +703,14 @@ async function markItem(item, action) {
   font-size: 15px;
   line-height: 1.55;
   color: var(--ts);
+}
+
+.bh-empty-note {
+  margin: 14px 0 0;
+  max-width: 36rem;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tt);
 }
 
 .bh-pro-strip {
@@ -758,6 +837,21 @@ async function markItem(item, action) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tt);
+}
+
+.bh-related {
+  margin: 8px 0 28px;
+}
+.bh-related-lead,
+.bh-related-empty {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ts);
+}
+.bh-related .bh-more-link {
+  display: inline-block;
+  margin-top: 4px;
 }
 
 .bh-diff ul {

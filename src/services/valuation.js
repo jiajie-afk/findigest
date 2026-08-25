@@ -11,6 +11,7 @@ import {
   invertRisks,
 } from './valuationTaxonomy.js'
 import { runLensStack } from './investorLenses.js'
+import { buildValueDesk, stripTradeLanguage, reconcileStatements } from './valueDesk.js'
 
 function dcfSum(eps, g1, g2, dr, tg, years1 = 5, years2 = 10) {
   let sumPV = 0
@@ -1138,6 +1139,8 @@ export function calculateValuation(fin, code, name, opts = {}) {
       valuability: 'search_only',
       structureOnly: true,
       primaryAnchor: 'hard',
+      desk: null,
+      ivModel: 0,
     }
   }
 
@@ -1368,11 +1371,16 @@ export function calculateValuation(fin, code, name, opts = {}) {
     wBase = 0.45
   }
 
-  let intrinsicValue = ivBear * wBear + ivBase * wBase
+  const oeRes = resolveOwnerEarnings(eps, archetype, fin)
+  const recon = reconcileStatements(fin, earned)
+  if (recon.summary) details.push(recon.summary)
+  let ivModel = ivBear * wBear + ivBase * wBase
   details.push(
     `三档 熊¥${ivBear.toFixed(0)} / 基¥${ivBase.toFixed(0)} / 牛¥${ivBull.toFixed(0)}（权重 熊${(wBear * 100) | 0}/基${(wBase * 100) | 0}）`,
   )
+  details.push(`模型IV（未向现价收敛）¥${ivModel.toFixed(0)} · OE来源 ${oeRes.source}${oeRes.sparseCash ? '·缺现金流代理' : ''}`)
   details.push(`行业PE带 ${peLow}–${peHigh}x · 现价PE ${pe ? pe.toFixed(1) : '—'}x`)
+  let intrinsicValue = ivModel
 
   let verdict = peVerdict(pe, peLow, peHigh)
   // Banks / insurance / brokers / realty: PB (or P/EV / NAV) is the honest verdict
@@ -1453,29 +1461,20 @@ export function calculateValuation(fin, code, name, opts = {}) {
     pe > 0 &&
     pe >= peLow &&
     pe <= peHigh &&
+    oeRes.sparseCash &&
     archetype !== 'bank' &&
     archetype !== 'insurance' &&
     archetype !== 'broker' &&
     archetype !== 'real_estate' &&
     archetype !== 'cyclical'
   ) {
-    // Utilities / wonderful franchises: PE already in-band means DCF was too harsh —
-    // converge toward mid-band PE, not peLow (那会把长江电力类标的系统性压穿).
-    const anchorPe =
-      archetype === 'utility_infra' ||
-      archetype === 'franchise_brand' ||
-      archetype === 'biotech' ||
-      archetype === 'capital_heavy' ||
-      quality.quality === 'wonderful' ||
-      quality.quality === 'good' ||
-      quality.quality === 'fair'
-        ? (peLow + peHigh) / 2
-        : peLow
+    // Only when we lack cash: PE-in-band is more honest than an EPS-proxy DCF.
+    const anchorPe = (peLow + peHigh) / 2
     const peAnchorIv = eps > 0 ? eps * anchorPe : intrinsicValue
     intrinsicValue = peAnchorIv * 0.55 + intrinsicValue * 0.45
     marginOfSafety = ((intrinsicValue - price) / price) * 100
     details.push(
-      `克制: PE在带内仍夸张MoS → 向PE${anchorPe === peLow ? '下限' : '中枢'}(${anchorPe.toFixed(0)}x)收敛`,
+      `缺现金流代理过猛：PE在带内 → 向PE中枢(${anchorPe.toFixed(0)}x)收敛，不把现价当锚`,
     )
   }
 
@@ -1501,9 +1500,10 @@ export function calculateValuation(fin, code, name, opts = {}) {
     details.push('仅供结构参考：财务输入不完整，不作高精度安全边际点估计')
   }
 
-  // Munger: |MoS|>50% almost always means bad assumptions stacked — clamp toward price
-  if (marginOfSafety != null && Math.abs(marginOfSafety) > 50 && price > 0) {
-    // Loss-making realty: heroic positive MoS on book is a trap — clamp harder
+  // Tape-hug only when the books are untrustworthy. Full-data IV is allowed to disagree with price.
+  const dataBroken =
+    valuability !== 'full' || bands.hard || meta.competenceDefault === 'hard' || recon.halt
+  if (marginOfSafety != null && Math.abs(marginOfSafety) > 50 && price > 0 && dataBroken) {
     const lossRealty = archetype === 'real_estate' && bands.realEstateMeta?.loss
     const absurd = Math.abs(marginOfSafety) > 100
     const clampIv = absurd
@@ -1513,18 +1513,20 @@ export function calculateValuation(fin, code, name, opts = {}) {
       : marginOfSafety > 0
         ? price * (lossRealty ? 1.05 : 1.35)
         : price * 0.7
-    intrinsicValue = absurd
-      ? clampIv
-      : intrinsicValue * 0.25 + clampIv * 0.75
+    intrinsicValue = absurd ? clampIv : intrinsicValue * 0.25 + clampIv * 0.75
     marginOfSafety = ((intrinsicValue - price) / price) * 100
     details.push(
       absurd
-        ? '芒格克制: |MoS|>100%视为数据/模型失效，强制贴近现价'
+        ? '数据损坏: |MoS|>100%且勾稽/完整度不足，强制贴近现价'
         : lossRealty
-          ? '芒格克制: 亏损地产账面MoS视为假精度，已强收敛'
-          : '芒格克制: |安全边际|>50%视为假精度，已向现价收敛',
+          ? '亏损地产账面MoS视为假精度，已强收敛'
+          : '数据不完整: |安全边际|>50%，已向现价收敛',
     )
     mosConfidence = 'low'
+  } else if (marginOfSafety != null && Math.abs(marginOfSafety) > 50 && price > 0) {
+    details.push(
+      `模型与现价偏离${marginOfSafety.toFixed(0)}%：完整数据下保留模型IV，不把市价当锚`,
+    )
   }
 
   // Cyclicals: mid-cycle MoS overrides raw PE percentile (peak earnings look "cheap" on PE)
@@ -1627,7 +1629,7 @@ export function calculateValuation(fin, code, name, opts = {}) {
     )
   }
 
-  if (marginOfSafety != null && Math.abs(marginOfSafety) > 45) mosConfidence = 'low'
+  if (dataBroken && marginOfSafety != null && Math.abs(marginOfSafety) > 45) mosConfidence = 'low'
   if (meta.competenceDefault === 'hard') mosConfidence = 'low'
 
   const mosNeedAdj =
@@ -1752,9 +1754,9 @@ export function calculateValuation(fin, code, name, opts = {}) {
   details.push(`操作提示: ${actionHint}`)
   details.push(`主锚:${primaryAnchor} · 置信:${mosConfidence}`)
 
-  // Low confidence first: pin toward price — then hard-cap so we never claim −40% and show −18%
+  // Low confidence / broken books: pin toward price. Full-data IV is allowed to disagree with tape.
   let displayIV = intrinsicValue
-  if (mosConfidence === 'low' && price > 0 && intrinsicValue > 0) {
+  if (dataBroken && mosConfidence === 'low' && price > 0 && intrinsicValue > 0) {
     const soft = price * 0.55 + intrinsicValue * 0.45
     if (Math.abs(soft - price) < Math.abs(intrinsicValue - price)) {
       displayIV = soft
@@ -1763,13 +1765,12 @@ export function calculateValuation(fin, code, name, opts = {}) {
     }
   }
 
-  // Absolute last: hard MoS cap (must run after soft converge)
-  if (marginOfSafety != null && Math.abs(marginOfSafety) > 40 && price > 0) {
+  if (dataBroken && marginOfSafety != null && Math.abs(marginOfSafety) > 40 && price > 0) {
     const cap = marginOfSafety > 0 ? 0.35 : -0.4
     displayIV = price * (1 + cap)
     intrinsicValue = displayIV
     marginOfSafety = cap * 100
-    details.push(`最终克制: MoS封顶至${(cap * 100).toFixed(0)}%`)
+    details.push(`最终克制: MoS封顶至${(cap * 100).toFixed(0)}%（仅数据不完整时）`)
     mosConfidence = 'low'
   }
 
@@ -1852,8 +1853,32 @@ export function calculateValuation(fin, code, name, opts = {}) {
     )
   }
 
+  const peakCycle = archetype === 'cyclical' && +(fin.profitGrowth || 0) >= 40
+  const desk = buildValueDesk({
+    fin,
+    earned,
+    oe: oeRes,
+    quality,
+    archetype,
+    competence: meta.competenceDefault,
+    hard: !!bands.hard,
+    valuability,
+    ivModel,
+    ivBear,
+    price,
+    mosDisplayed: marginOfSafety,
+    mosNeedAdj,
+    modelDr: model.dr,
+    peakCycle,
+  })
+  actionHint = desk.posture || stripTradeLanguage(actionHint)
+  if (desk.assumptions?.length) assumptions.push(...desk.assumptions)
+  details.push(`研究台: ${desk.posture}`)
+  if (desk.mosNeed) details.push(`巴菲特安全边际门槛 ${desk.mosNeed}%（${desk.mosTier.band}）`)
+
   return {
     intrinsicValue: Math.round(displayIV * 100) / 100,
+    ivModel: Math.round(ivModel * 100) / 100,
     ivBear: Math.round(ivBear * 100) / 100,
     ivBase: Math.round(ivBase * 100) / 100,
     ivBull: Math.round(ivBull * 100) / 100,
@@ -1865,7 +1890,7 @@ export function calculateValuation(fin, code, name, opts = {}) {
     archetypeId: archetype,
     archetypeLabel: meta.label,
     method: meta.method,
-    methodVersion: `v1-${archetype}`,
+    methodVersion: `v2-desk-${archetype}`,
     inputsUsed,
     assumptions,
     doesNotDo,
@@ -1902,7 +1927,9 @@ export function calculateValuation(fin, code, name, opts = {}) {
     industryModel: model.model,
     details,
     marginOfSafety: marginOfSafety == null ? null : Math.round(marginOfSafety * 10) / 10,
-    mosBuyMin: Math.round(mosNeedAdj),
+    mosBuyMin: desk.mosNeed,
+    mosModel: desk.mosModel,
+    mosVsBear: desk.mosVsBear,
     pe,
     peLow,
     peHigh,
@@ -1914,6 +1941,7 @@ export function calculateValuation(fin, code, name, opts = {}) {
     actionHint,
     price,
     lensStack,
+    desk,
   }
 }
 

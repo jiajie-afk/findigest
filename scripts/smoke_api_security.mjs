@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from '../lib/rateLimit.js'
 import { validateUpstreamUrl } from '../lib/proxyCore.js'
 import { authorizeIdentity, isAllowedOrigin, requireOtpSecretConfigured } from '../lib/apiAuth.js'
 import { canRevealDevCode } from '../lib/emailOtp.js'
+import { computeKpis, systemHealth } from '../lib/adminOps.js'
 
 let failed = 0
 function assert(cond, msg) {
@@ -100,6 +101,22 @@ function assert(cond, msg) {
   process.env.NODE_ENV = prevN
   if (prevR != null) process.env.EMAIL_DEV_REVEAL = prevR
   else delete process.env.EMAIL_DEV_REVEAL
+}
+
+// --- Ops console KPIs / health flags (no secrets leaked) ---
+{
+  const k = computeKpis([
+    { plan: 'pro', proUntil: null, banned: false, totalTokens: 100, calls: 2, createdAt: Date.now(), lastSeenAt: Date.now() },
+    { plan: 'pro', proUntil: Date.now() - 1000, banned: true, totalTokens: 50, calls: 1, createdAt: 1, lastSeenAt: 1 },
+    { plan: 'free', banned: false, totalTokens: 0, calls: 0, createdAt: 1, lastSeenAt: 1 },
+  ])
+  assert(k.registered === 3, 'kpi registered')
+  assert(k.pro === 1, 'kpi active pro')
+  assert(k.expired === 1, 'kpi expired pro')
+  assert(k.banned === 1, 'kpi banned')
+  assert(k.tokens === 150, 'kpi tokens')
+  const h = systemHealth()
+  assert(typeof h.blob === 'boolean' && typeof h.otp === 'boolean', 'systemHealth booleans only')
 }
 
 if (failed) {

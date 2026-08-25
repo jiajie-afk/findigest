@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FinDigest 持仓导入",
-  "version": "1.1.0",
-  "description": "登录东方财富 / 同花顺网页交易后读取持仓，发送到 FinDigest（不采集账号密码）",
+  "version": "1.2.0",
+  "description": "在已登录的券商持仓页读取表格，发送到 FinDigest（不采集账号密码）",
   "action": {
     "default_title": "FinDigest 持仓导入",
     "default_popup": "popup.html"
@@ -30,12 +30,16 @@
     "https://*.thsi.cn/*",
     "http://127.0.0.1/*",
     "http://localhost/*",
+    "https://findigest.cn/*",
+    "https://www.findigest.cn/*",
     "https://findigest-three.vercel.app/*"
   ],
   "externally_connectable": {
     "matches": [
       "http://127.0.0.1/*",
       "http://localhost/*",
+      "https://findigest.cn/*",
+      "https://www.findigest.cn/*",
       "https://findigest-three.vercel.app/*"
     ]
   },
@@ -81,6 +85,8 @@
       "matches": [
         "http://127.0.0.1/*",
         "http://localhost/*",
+        "https://findigest.cn/*",
+        "https://www.findigest.cn/*",
         "https://findigest-three.vercel.app/*"
       ],
       "js": ["content-findigest.js"],

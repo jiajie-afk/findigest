@@ -1,7 +1,7 @@
 /**
  * Commercial entitlements — single source of truth.
- * When free-Pro launch (or localhost): Pro is free to choose; productEdition still controls the shell.
- * When charging: entitlements = f(billing).
+ * Membership (paid / local free-Pro) unlocks the Pro shell; it must not trap the user in it.
+ * productEdition is the chosen desk. Paid + basic → Museum Desk, with the right to switch back.
  */
 
 import { isLocalFreeProHost } from './localOwner.js'
@@ -11,6 +11,27 @@ function isBillingProActive(state = {}) {
   if (state.plan !== 'pro') return false
   if (state.proUntil == null) return true
   return Number(state.proUntil) > Date.now()
+}
+
+/**
+ * @param {{
+ *   currentEdition?: string | null,
+ *   isBillingPro?: boolean,
+ *   localFreePro?: boolean,
+ *   activatePro?: boolean,
+ * }} input
+ * @returns {'basic'|'pro'|string|null}
+ */
+export function nextProductEdition({
+  currentEdition,
+  isBillingPro = false,
+  localFreePro = false,
+  activatePro = false,
+} = {}) {
+  if (activatePro && (isBillingPro || localFreePro)) return 'pro'
+  if (currentEdition === 'pro' && !isBillingPro && !localFreePro) return 'basic'
+  if (currentEdition === 'basic' || currentEdition === 'pro') return currentEdition
+  return currentEdition || null
 }
 
 /**
@@ -24,33 +45,24 @@ function isBillingProActive(state = {}) {
  *   isBillingPro: boolean,
  *   editionProjected: 'basic'|'pro',
  *   localFreePro: boolean,
+ *   canChoosePro: boolean,
  * }}
  */
 export function getEntitlements(billingState, profile) {
   const localFreePro = isLocalFreeProHost()
   const paid = isBillingProActive(billingState || {})
   const edition = profile?.productEdition
-  // Free-Pro launch / localhost: follow explicit edition. Paid remote: plan only.
-  const isPro = paid || (localFreePro && edition === 'pro')
-  if (!isPro) {
-    return {
-      canUseProHud: false,
-      canUseLlm: false,
-      canSeeProNav: false,
-      canUseProdeskStyle: false,
-      isBillingPro: false,
-      editionProjected: 'basic',
-      localFreePro,
-    }
-  }
+  const canChoosePro = paid || localFreePro
+  const shellPro = canChoosePro && edition === 'pro'
   return {
-    canUseProHud: true,
-    canUseLlm: true,
-    canSeeProNav: true,
-    canUseProdeskStyle: true,
-    isBillingPro: true,
-    editionProjected: 'pro',
+    canUseProHud: shellPro,
+    canUseLlm: shellPro,
+    canSeeProNav: shellPro,
+    canUseProdeskStyle: shellPro,
+    isBillingPro: paid,
+    editionProjected: shellPro ? 'pro' : 'basic',
     localFreePro,
+    canChoosePro,
   }
 }
 

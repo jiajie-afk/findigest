@@ -22,7 +22,7 @@ import {
   readSyncMeta,
   writeSyncMeta,
   pickVaultWinner,
-  emptyPortfolio,
+  starterPortfolio,
   snapshotVaultKeys,
   restoreVaultSnapshot,
 } from '@/services/vault.js'
@@ -382,7 +382,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (!hasPf) {
         localStorage.setItem(
           `fd_v1:${account.accountId}:fd_portfolios`,
-          JSON.stringify(emptyPortfolio()),
+          JSON.stringify(starterPortfolio()),
         )
       }
 

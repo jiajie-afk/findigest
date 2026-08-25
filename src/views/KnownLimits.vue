@@ -39,6 +39,7 @@
         配置 <code>VAULT_SESSION_SECRET</code> 后云端同步可发 httpOnly <code>fd_sess</code>；
         SPA 路由与离线解锁仍用本机 session / 密码，XSS 仍可能触及 localStorage 密文与会话快照。
         同步用内存解锁（刷新后需再输密码）；云端带 <code>updatedAt</code> 乐观锁，避免无脑覆盖。
+        完整会话 token 改 httpOnly cookie 是下一阶段；本轮只做到缩短暴露面与登出清干净。
       </p>
     </section>
 

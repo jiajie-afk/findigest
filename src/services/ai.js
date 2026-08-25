@@ -27,10 +27,11 @@ function dcfStoryBits(dcf) {
   if (!dcf) return { evidence: [], risk: '', method: '' }
   const details = Array.isArray(dcf.details) ? dcf.details : []
   const evidence = details
-    .filter((d) => /主锚|质量|PE|PB|周期|账面|克制|封顶|收敛|逆向/.test(String(d)))
-    .slice(0, 3)
+    .filter((d) => /主锚|质量|PE|PB|周期|账面|克制|封顶|收敛|逆向|勾稽|研究台|所有者盈余|巴菲特安全边际/.test(String(d)))
+    .slice(0, 4)
   const risk =
-    details.find((d) => /风险|失效|警示|能力圈|假精度|亏损/.test(String(d))) ||
+    details.find((d) => /风险|失效|警示|能力圈|假精度|亏损|勾稽失败/.test(String(d))) ||
+    dcf.desk?.posture ||
     dcf.actionHint ||
     ''
   return {
@@ -87,10 +88,10 @@ function buildAdviceItems(holdings, analyses, financials, profile) {
         type: 'pending',
         tone: 'info',
         code: h.code,
-        title: `${h.name} 尚无消息面采集`,
-        summary: '缺少新闻/情绪数据，建议先采集再做仓位决策。',
-        logic: ['持仓已记录', '未完成深度采集', '无法给出可解释信号'],
-        trigger: '数据缺口 · 建议先采集',
+        title: `${h.name} 尚无消息面`,
+        summary: '还没有新闻/情绪数据。刷新行情后，才能谈仓位含义。',
+        logic: ['持仓已记录', '未完成消息面刷新', '无法给出可解释信号'],
+        trigger: '数据缺口 · 先刷新',
         priority: inFocus ? 1 : 2,
       })
       return
@@ -319,7 +320,7 @@ function buildAdviceItems(holdings, analyses, financials, profile) {
         code: null,
         title: `观察名单：${ind}`,
         summary: '你标记了该行业，但当前持仓中暂无已分析样本。',
-        logic: ['来自投资画像·关注行业', '建议添加 1–2 只代表性标的并采集'],
+        logic: ['来自投资画像·关注行业', '导入该行业持仓后会出现在今日'],
         trigger: '来自画像：关注行业',
         priority: 3,
       })
@@ -399,8 +400,8 @@ function buildLocalNarrative(profile, items, holdings, constraints) {
   if (!riskItems.length && !oppItems.length) {
     parts.push(
       isValue
-        ? '当前持仓暂无明显「够厚的折扣」或「硬否决」，建议先补齐财务采集，再谈加仓。'
-        : '当前持仓信号整体中性，建议先完成待采集标的，再刷新日报。',
+        ? '当前持仓暂无明显「够厚的折扣」或「硬否决」，建议先补齐财务数据，再谈仓位含义。'
+        : '当前持仓信号整体中性，建议先刷新待补行情的标的，再看今日。',
     )
   }
 
@@ -657,6 +658,23 @@ export async function generateDailyReport({
   getPrice,
 }) {
   const constraints = extractConstraints(userProfile, rawProfile)
+  if (!(holdings || []).length) {
+    return {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      source: 'local',
+      headline: '先把持仓放进来。没有股票，就没有今日简报。',
+      items: [],
+      constraints,
+      violations: [],
+      profileSnapshot: {
+        style: userProfile?.style,
+        risk: userProfile?.risk,
+        mode: constraints.mode,
+        dataCompleteness: 0,
+      },
+    }
+  }
   const { violations } = evaluateHoldings(holdings, portfolioMv, getPrice, constraints)
   let items = buildAdviceItems(holdings, analyses, financials, userProfile)
   items = applyHardConstraints(items, {

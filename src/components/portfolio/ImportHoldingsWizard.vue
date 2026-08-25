@@ -1,24 +1,35 @@
 <template>
   <div v-if="open" class="imp-root" role="dialog" aria-modal="true" aria-labelledby="imp-title">
     <button type="button" class="imp-scrim" aria-label="关闭" @click="close" />
-    <div class="imp-panel">
+    <div
+      class="imp-panel"
+      :data-drop="dropping ? '1' : '0'"
+      @dragenter.prevent="dropping = true"
+      @dragover.prevent="dropping = true"
+      @dragleave="onDragLeave"
+      @drop.prevent="onDrop"
+    >
       <header class="imp-head">
         <div>
           <p class="imp-kicker">持仓导入</p>
-          <h2 id="imp-title">从券商同步到 FinDigest</h2>
+          <h2 id="imp-title">把持仓表放进来</h2>
           <p class="imp-sub">
-            本机可从已登录的东方财富证券交易窗口同步持仓，也会扫剪贴板和桌面上的导出 CSV。请先在软件里打开持仓表。
+            {{
+              tab === 'manual'
+                ? '一只一只填：代码、名称、股数、成本。跟以前手动添加一样。'
+                : '粘贴、上传或拍一张持仓截图。三种都能用，选最顺手的即可。'
+            }}
           </p>
         </div>
         <button type="button" class="imp-ghost" @click="close">关闭</button>
       </header>
 
       <div class="imp-step">
-        <label class="imp-label" for="imp-portfolio">目标组合</label>
+        <label class="imp-label" for="imp-portfolio">写入组合</label>
         <div class="imp-dest" :data-single="portfolio.portfolios.length <= 1 ? '1' : '0'">
           <span class="imp-dest-mark" aria-hidden="true" />
           <div class="imp-dest-body">
-            <span v-if="portfolio.portfolios.length <= 1" class="imp-dest-meta">写入目标</span>
+            <span v-if="portfolio.portfolios.length <= 1" class="imp-dest-meta">目标</span>
             <select
               id="imp-portfolio"
               v-model="portfolioId"
@@ -30,115 +41,159 @@
           </div>
           <span class="imp-dest-chev" aria-hidden="true" />
         </div>
-        <p class="imp-dest-hint">解析后的持仓会写入这个组合</p>
       </div>
 
-      <div class="imp-step">
-        <label class="imp-label">来源</label>
-        <div class="imp-seg" role="group" aria-label="券商">
-          <button
-            v-for="t in loginBrokers"
-            :key="t.id"
-            type="button"
-            class="imp-seg-btn"
-            :class="{ on: templateId === t.id }"
-            :aria-pressed="templateId === t.id"
-            @click="pickBroker(t.id)"
-          >
-            {{ t.label }}
-          </button>
-        </div>
-      </div>
-
-      <div class="imp-seg imp-seg-channel" role="group" aria-label="同步方式">
-        <button
-          type="button"
-          class="imp-seg-btn"
-          :class="{ on: channel === 'web' }"
-          :aria-pressed="channel === 'web'"
-          @click="channel = 'web'"
-        >
-          网页登录采集
+      <div class="imp-tabs" role="tablist" aria-label="导入方式">
+        <button type="button" role="tab" :aria-selected="tab === 'manual'" :class="{ on: tab === 'manual' }" @click="tab = 'manual'">
+          手动录入
         </button>
-        <button
-          type="button"
-          class="imp-seg-btn"
-          :class="{ on: channel === 'desktop' }"
-          :aria-pressed="channel === 'desktop'"
-          @click="channel = 'desktop'"
-        >
-          电脑软件同步
+        <button type="button" role="tab" :aria-selected="tab === 'paste'" :class="{ on: tab === 'paste' }" @click="tab = 'paste'">
+          粘贴表格
+        </button>
+        <button type="button" role="tab" :aria-selected="tab === 'file'" :class="{ on: tab === 'file' }" @click="tab = 'file'">
+          上传文件
+        </button>
+        <button type="button" role="tab" :aria-selected="tab === 'shot'" :class="{ on: tab === 'shot' }" @click="tab = 'shot'">
+          截图 / 拍照
         </button>
       </div>
 
-      <div v-if="channel === 'web'" class="imp-login">
-        <p class="imp-login-lead">{{ activeBroker.hint }}</p>
-        <div class="imp-login-actions">
-          <button type="button" class="btn bp sm" @click="openBrokerLogin">打开{{ activeBroker.label }}登录页</button>
-          <button type="button" class="imp-ghost" @click="openBrokerHoldings">打开持仓页</button>
+      <div v-if="tab === 'manual'" class="imp-body">
+        <div class="imp-manual">
+          <label class="imp-field" style="position: relative">
+            <span>代码</span>
+            <input
+              v-model="manual.code"
+              type="text"
+              placeholder="600519 / 茅台"
+              autocomplete="off"
+              @input="onManualCode"
+            />
+            <ul v-if="manualSuggest.length" class="imp-suggest" role="listbox">
+              <li
+                v-for="s in manualSuggest"
+                :key="s.code"
+                role="option"
+                @mousedown.prevent="pickManual(s)"
+              >
+                <strong>{{ s.code }}</strong>
+                <span>{{ s.name }}</span>
+                <em>{{ s.market }}</em>
+              </li>
+            </ul>
+          </label>
+          <label class="imp-field">
+            <span>名称</span>
+            <input v-model="manual.name" type="text" placeholder="贵州茅台" />
+          </label>
+          <label class="imp-field">
+            <span>市场</span>
+            <select v-model="manual.ex">
+              <option value="SH">SH</option>
+              <option value="SZ">SZ</option>
+              <option value="HK">HK</option>
+            </select>
+          </label>
+          <label class="imp-field">
+            <span>股数</span>
+            <input v-model.number="manual.shares" type="number" min="0" />
+          </label>
+          <label class="imp-field">
+            <span>成本</span>
+            <input v-model.number="manual.cost" type="number" min="0" step="0.01" />
+          </label>
         </div>
-        <ol class="imp-ol">
-          <li>安装浏览器扩展：Chrome/Edge → 开发者模式 → 加载 <code>extension/</code></li>
-          <li>在刚打开的页面用<strong>交易账号</strong>登录</li>
-          <li>点扩展「读取本页持仓」→「发送到 FinDigest」</li>
-        </ol>
-        <p class="imp-honest">读得到取决于网页表格是否暴露；登录页或客户端内嵌页可能读空，那时改用复制粘贴。</p>
-        <button type="button" class="imp-ghost" @click="loadExtensionPayload">已发送？读取扩展数据</button>
-      </div>
-
-      <div v-else class="imp-login">
-        <p class="imp-login-lead">
-          本机有东方财富终端。登录请先等它自己升级完。扫码必须用「东方财富证券」App，不能用看行情的「东方财富」或微信。登录过程中不要点复制窗口。不会读取密码文件。
-        </p>
-        <div class="imp-login-actions">
-          <button type="button" class="btn bp sm" :disabled="busy" @click="syncDesktop(false)">
-            {{ busy ? '同步中…' : '同步剪贴板 / CSV' }}
+        <div class="imp-manual-actions">
+          <button class="btn bp sm" type="button" :disabled="busy" @click="addManualRow">
+            确认添加
           </button>
-          <button type="button" class="imp-ghost" :disabled="busy" @click="syncDesktop(true)">
-            复制交易窗口
-          </button>
-          <button type="button" class="imp-ghost" @click="tab = 'paste'">改粘贴</button>
-          <button type="button" class="imp-ghost" @click="tab = 'file'">改上传 CSV</button>
+          <button class="imp-ghost" type="button" @click="resetManual">清空</button>
         </div>
-        <ol class="imp-ol">
-          <li>等东方财富更新结束，用资金账号登录（或证券 App 扫码）</li>
-          <li>点到持仓表，自己 Ctrl+A / Ctrl+C</li>
-          <li>回到这里点「同步剪贴板 / CSV」。登录页不要点「复制交易窗口」</li>
-        </ol>
+        <p class="imp-hint">加完一只还可以继续填。要一次导入整张表，换到旁边三个标签。</p>
       </div>
 
-      <div class="imp-tabs" role="tablist" aria-label="手动导入方式">
-        <button type="button" role="tab" :aria-selected="tab === 'paste'" :class="{ on: tab === 'paste' }" @click="tab = 'paste'">粘贴表格</button>
-        <button type="button" role="tab" :aria-selected="tab === 'file'" :class="{ on: tab === 'file' }" @click="tab = 'file'">上传 CSV</button>
-        <button type="button" role="tab" :aria-selected="tab === 'shot'" :class="{ on: tab === 'shot' }" @click="tab = 'shot'">截图 OCR</button>
-      </div>
-
-      <div v-if="tab === 'paste'" class="imp-body">
+      <div v-else-if="tab === 'paste'" class="imp-body">
         <textarea
           v-model="pasteText"
           class="imp-ta"
           rows="8"
-          placeholder="从券商网页复制持仓表，粘贴到这里…"
+          placeholder="从券商持仓页复制表格，粘贴到这里。截图也可以直接 Ctrl+V。"
+          @paste="onTextareaPaste"
         />
-        <button class="btn bp sm" :disabled="busy" @click="runParseText">解析粘贴内容</button>
+        <button class="btn bp sm" :disabled="busy || !pasteText.trim()" @click="runParseText()">
+          {{ busy ? '解析中…' : '解析' }}
+        </button>
       </div>
 
       <div v-else-if="tab === 'file'" class="imp-body">
-        <input type="file" accept=".csv,.txt,text/csv,text/plain" @change="onFile" />
-        <p class="imp-hint">第一期请用 CSV / TXT（Excel 请另存为 CSV）。</p>
+        <label class="imp-drop">
+          <input class="imp-file-hidden" type="file" accept=".csv,.txt,text/csv,text/plain,image/*" @change="onFile" />
+          <strong>点这里选文件</strong>
+          <span>CSV / TXT，或直接丢一张持仓截图。Excel 请另存为 CSV。</span>
+        </label>
       </div>
 
       <div v-else-if="tab === 'shot'" class="imp-body">
-        <input type="file" accept="image/*" @change="onImage" />
-        <p class="imp-hint">上传或粘贴持仓截图；OCR 有误差，请在下方校对后再导入。</p>
+        <div class="imp-shot-actions">
+          <label class="btn bp sm imp-file-label">
+            拍照
+            <input class="imp-file-hidden" type="file" accept="image/*" capture="environment" @change="onImage" />
+          </label>
+          <label class="btn bs sm imp-file-label">
+            相册 / 截图
+            <input class="imp-file-hidden" type="file" accept="image/*" @change="onImage" />
+          </label>
+        </div>
+        <p class="imp-hint">拍交易端持仓页，或 Ctrl+V 粘贴截图。第一次会加载中文模型，稍等几秒。</p>
+        <img v-if="shotPreview" class="imp-preview" :src="shotPreview" alt="待识别截图" />
         <p v-if="ocrStatus" class="imp-ocr">{{ ocrStatus }}</p>
+      </div>
+
+      <details v-if="tab !== 'manual'" class="imp-help">
+        <summary>券商里怎么复制？</summary>
+        <div class="imp-seg" role="group" aria-label="表格格式">
+          <button
+            v-for="t in formatChips"
+            :key="t.id"
+            type="button"
+            class="imp-seg-btn"
+            :class="{ on: templateId === t.id }"
+            @click="templateId = t.id"
+          >
+            {{ t.label }}
+          </button>
+        </div>
+        <ol class="imp-ol">
+          <li v-for="(step, i) in activeGuide" :key="i">{{ step }}</li>
+        </ol>
+        <p v-if="connectPath" class="imp-hint">
+          <router-link :to="connectPath">打开官方登录说明</router-link>
+          （登录仍在券商完成，这里只负责把表读进来。）
+        </p>
+        <div v-if="localSync" class="imp-login-actions">
+          <button type="button" class="imp-ghost" :disabled="busy" @click="syncDesktop(false)">本机同步剪贴板</button>
+        </div>
+      </details>
+
+      <div v-if="parseAttempted && tab !== 'manual'" class="imp-report" role="status">
+        <p>
+          认出 <strong>{{ rows.length }}</strong> 条
+          <template v-if="dropped.length">，丢掉 <strong>{{ dropped.length }}</strong> 条</template>
+        </p>
+        <ul v-if="dropped.length">
+          <li v-for="(d, i) in dropped.slice(0, 12)" :key="i">
+            <code>{{ d.preview }}</code>
+            <span>{{ d.reason }}</span>
+          </li>
+        </ul>
+        <p v-if="dropped.length > 12" class="imp-hint">其余 {{ dropped.length - 12 }} 条同理，未全部列出。</p>
       </div>
 
       <div v-if="warnings.length" class="imp-warn">
         <div v-for="(w, i) in warnings" :key="i">{{ w }}</div>
       </div>
 
-      <div v-if="rows.length" class="imp-review">
+      <div v-if="rows.length && tab !== 'manual'" class="imp-review">
         <div class="imp-review-head">
           <strong>校对（{{ selectedCount }} / {{ rows.length }}）</strong>
           <button type="button" class="imp-ghost" @click="toggleAll(true)">全选</button>
@@ -194,16 +249,22 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolio'
 import { useUserStore } from '@/store/user'
 import {
+  IMPORT_TEMPLATES,
   parseHoldingsText,
-  parseOcrText,
   normalizeExtensionRows,
   rowsToCommit,
+  htmlTableToText,
 } from '@/services/holdingsImport.js'
+import { recognizeHoldingsImage } from '@/services/ocrHoldings.js'
 import { apiUrl } from '@/services/apiClient.js'
-import { BROKER_LOGINS, brokerById } from '@/data/brokerLogin.js'
+import { brokerById } from '@/data/brokerLogin.js'
+import { isTrueLocalhost } from '@/services/localOwner.js'
+import { searchUniverse } from '@/utils/universeSearch.js'
+import { inferHoldingEx } from '@/services/quotesRefresh.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  startTab: { type: String, default: '' },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -217,62 +278,39 @@ const open = computed({
   set: (v) => emit('update:modelValue', v),
 })
 
-const loginBrokers = BROKER_LOGINS
+const formatChips = IMPORT_TEMPLATES.filter((t) => ['eastmoney', 'ths', 'tiger', 'generic'].includes(t.id))
 const templateId = ref('eastmoney')
 const portfolioId = ref(null)
 const tab = ref('paste')
-const channel = ref('desktop')
 const pasteText = ref('')
 const rows = ref([])
 const warnings = ref([])
+const dropped = ref([])
+const parseAttempted = ref(false)
 const busy = ref(false)
 const ocrStatus = ref('')
+const shotPreview = ref('')
+const dropping = ref(false)
+const localSync = isTrueLocalhost()
+const manualSuggest = ref([])
+const manual = ref({
+  code: '',
+  name: '',
+  ex: 'SH',
+  shares: 100,
+  cost: 0,
+})
+let pasteTimer = 0
 
-const activeBroker = computed(() => brokerById(templateId.value))
+const activeGuide = computed(() => {
+  const t = IMPORT_TEMPLATES.find((x) => x.id === templateId.value)
+  return t?.guide || brokerById(templateId.value).desktop
+})
+const connectPath = computed(() =>
+  ['eastmoney', 'ths'].includes(templateId.value) ? `/connect/${templateId.value}` : '',
+)
 const selectedCount = computed(() => rows.value.filter((r) => r.selected).length)
 const targetName = computed(() => portfolio.portfolios.find((p) => p.id === portfolioId.value)?.name || '组合')
-
-function pickBroker(id) {
-  templateId.value = id
-}
-
-function openBrokerLogin() {
-  window.open(activeBroker.value.loginUrl, '_blank', 'noopener,noreferrer')
-  user.toast(`已打开${activeBroker.value.label}登录页，请用交易账号登录`)
-}
-
-function openBrokerHoldings() {
-  window.open(activeBroker.value.holdingsUrl, '_blank', 'noopener,noreferrer')
-}
-
-async function syncDesktop(copyWindow = false) {
-  busy.value = true
-  warnings.value = []
-  try {
-    const res = await fetch(apiUrl('/api/holdings-local'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ launch: false, copyWindow: !!copyWindow }),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      user.toast(data.message || '本机同步失败（需在本地 Vite 运行）')
-      return
-    }
-    if (data.notes?.length) warnings.value = data.notes
-    if (data.rows?.length) {
-      rows.value = data.rows
-      if (data.warnings?.length) warnings.value = [...warnings.value, ...data.warnings]
-      user.toast(`同步到 ${data.rows.length} 行，请校对`)
-    } else {
-      user.toast(data.notes?.[0] || '未读到持仓。请打开持仓表后再试，或改粘贴 / CSV。')
-    }
-  } catch (e) {
-    user.toast(e?.message || '本机同步失败')
-  } finally {
-    busy.value = false
-  }
-}
 
 watch(
   () => portfolio.portfolios,
@@ -283,7 +321,18 @@ watch(
 )
 
 watch(open, (v) => {
-  if (v) tryConsumeQuery()
+  if (!v) return
+  if (props.startTab === 'manual' || route.query.import === 'manual') tab.value = 'manual'
+  else if (props.startTab === 'paste' || props.startTab === 'file' || props.startTab === 'shot') {
+    tab.value = props.startTab
+  }
+  tryConsumeQuery()
+})
+
+watch(pasteText, () => {
+  clearTimeout(pasteTimer)
+  if (tab.value !== 'paste' || pasteText.value.trim().length < 8) return
+  pasteTimer = window.setTimeout(() => runParseText({ silent: true }), 360)
 })
 
 function close() {
@@ -301,23 +350,56 @@ function confLabel(c) {
   return '低·请核'
 }
 
-function applyParsed(result) {
+function applyParsed(result, okToast) {
   rows.value = result.rows || []
   warnings.value = result.warnings || []
+  dropped.value = result.dropped || []
+  parseAttempted.value = true
+  if (!rows.value.length) {
+    if (!okToast?.silent) {
+      user.toast(
+        dropped.value.length
+          ? `未导入持仓：丢掉 ${dropped.value.length} 条，见下方原因`
+          : '未解析到持仓行',
+      )
+    }
+    return
+  }
+  if (!okToast?.silent) {
+    const extra = dropped.value.length ? `，丢掉 ${dropped.value.length} 条` : ''
+    user.toast(`认出 ${rows.value.length} 行${extra}，请校对`)
+  }
 }
 
-function runParseText() {
-  applyParsed(parseHoldingsText(pasteText.value, templateId.value))
-  if (!rows.value.length) user.toast('未解析到持仓行')
-  else user.toast(`解析到 ${rows.value.length} 行，请校对`)
+function runParseText(opts = {}) {
+  applyParsed(parseHoldingsText(pasteText.value, templateId.value), { silent: !!opts.silent })
+}
+
+function onTextareaPaste(e) {
+  const html = e.clipboardData?.getData('text/html')
+  const tableText = htmlTableToText(html)
+  if (tableText.split('\n').length >= 2) {
+    e.preventDefault()
+    pasteText.value = tableText
+  }
+}
+
+async function ingestFile(file) {
+  if (!file) return
+  if (file.type.startsWith('image/')) {
+    tab.value = 'shot'
+    await runOcr(file)
+    return
+  }
+  tab.value = 'file'
+  const text = await file.text()
+  pasteText.value = text
+  applyParsed(parseHoldingsText(text, templateId.value))
 }
 
 async function onFile(e) {
   const file = e.target.files?.[0]
-  if (!file) return
-  const text = await file.text()
-  applyParsed(parseHoldingsText(text, templateId.value))
-  user.toast(rows.value.length ? `解析到 ${rows.value.length} 行` : '文件未解析出持仓')
+  await ingestFile(file)
   e.target.value = ''
 }
 
@@ -328,28 +410,44 @@ async function onImage(e) {
   e.target.value = ''
 }
 
+function setPreview(fileOrBlob) {
+  if (shotPreview.value) URL.revokeObjectURL(shotPreview.value)
+  try {
+    shotPreview.value = URL.createObjectURL(fileOrBlob)
+  } catch {
+    shotPreview.value = ''
+  }
+}
+
 async function runOcr(fileOrBlob) {
   busy.value = true
-  ocrStatus.value = 'OCR 识别中…'
+  tab.value = 'shot'
+  setPreview(fileOrBlob)
+  ocrStatus.value = '准备识别…'
   try {
-    const { createWorker } = await import('tesseract.js')
-    const worker = await createWorker('chi_sim+eng')
-    const { data } = await worker.recognize(fileOrBlob)
-    await worker.terminate()
-    ocrStatus.value = '识别完成，请校对黄色低置信行'
-    applyParsed(parseOcrText(data?.text || ''))
-    if (!rows.value.length) user.toast('OCR 未识别到持仓，请改用粘贴或 CSV')
+    const result = await recognizeHoldingsImage(fileOrBlob, {
+      onStatus: (msg) => {
+        ocrStatus.value = msg
+      },
+    })
+    applyParsed(result, { silent: true })
+    ocrStatus.value = rows.value.length
+      ? `认出 ${rows.value.length} 条${dropped.value.length ? `，丢掉 ${dropped.value.length} 条` : ''}。黄色行为低置信，请校对`
+      : dropped.value.length
+        ? `没认出持仓，丢掉 ${dropped.value.length} 条，见下方原因`
+        : '没认出持仓，请换清晰截图或改粘贴'
   } catch (err) {
     console.error(err)
-    ocrStatus.value = 'OCR 失败'
-    user.toast('OCR 失败，请改用粘贴表格')
+    const detail = err?.message ? String(err.message).slice(0, 80) : ''
+    ocrStatus.value = detail ? `识别失败：${detail}` : '识别失败'
+    user.toast('截图识别失败，请改用粘贴或 CSV')
   } finally {
     busy.value = false
   }
 }
 
 function onPasteImage(e) {
-  if (!open.value || tab.value !== 'shot') return
+  if (!open.value) return
   const items = e.clipboardData?.items
   if (!items) return
   for (const item of items) {
@@ -364,27 +462,127 @@ function onPasteImage(e) {
   }
 }
 
+function onDragLeave() {
+  dropping.value = false
+}
+
+function onDrop(e) {
+  dropping.value = false
+  const file = e.dataTransfer?.files?.[0]
+  if (file) ingestFile(file)
+}
+
+async function syncDesktop(copyWindow = false) {
+  busy.value = true
+  warnings.value = []
+  try {
+    const res = await fetch(apiUrl('/api/holdings-local'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ launch: false, copyWindow: !!copyWindow }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      user.toast(data.message || '本机同步失败')
+      return
+    }
+    if (data.notes?.length) warnings.value = data.notes
+    if (data.rows?.length) {
+      rows.value = data.rows
+      if (data.warnings?.length) warnings.value = [...warnings.value, ...data.warnings]
+      user.toast(`同步到 ${data.rows.length} 行，请校对`)
+    } else {
+      user.toast(data.notes?.[0] || '未读到持仓，请改粘贴或截图')
+    }
+  } catch (err) {
+    user.toast(err?.message || '本机同步失败')
+  } finally {
+    busy.value = false
+  }
+}
+
 function loadExtensionPayload() {
   try {
     const raw = localStorage.getItem('fd_extension_import_v1')
     if (!raw) {
-      user.toast('暂无扩展数据，请先在券商页读取并发送')
+      user.toast('暂无扩展数据')
       return
     }
     const data = JSON.parse(raw)
     applyParsed(normalizeExtensionRows(data))
     tab.value = 'paste'
-    user.toast(rows.value.length ? `扩展带回 ${rows.value.length} 行` : '扩展数据无效')
   } catch {
     user.toast('扩展数据解析失败')
   }
 }
 
 function tryConsumeQuery() {
+  if (route.query.import === 'manual') {
+    tab.value = 'manual'
+    return
+  }
   if (route.query.import === 'extension') {
     tab.value = 'paste'
     loadExtensionPayload()
   }
+}
+
+function resetManual() {
+  manual.value = { code: '', name: '', ex: 'SH', shares: 100, cost: 0 }
+  manualSuggest.value = []
+}
+
+function onManualCode() {
+  const q = String(manual.value.code || '').trim()
+  const name = portfolio.db?.[q]
+  if (name) {
+    manual.value.name = name
+    manual.value.ex = inferHoldingEx(q, manual.value.ex)
+    manualSuggest.value = []
+    return
+  }
+  manualSuggest.value = q ? searchUniverse(portfolio.db, q, { limit: 8 }) : []
+  if (/^\d/.test(q)) manual.value.ex = inferHoldingEx(q)
+}
+
+function pickManual(s) {
+  manual.value.code = s.code
+  manual.value.name = s.name
+  manual.value.ex = s.market || inferHoldingEx(s.code)
+  manualSuggest.value = []
+}
+
+function addManualRow() {
+  if (!portfolioId.value) portfolioId.value = portfolio.portfolios[0]?.id
+  const code = String(manual.value.code || '').trim()
+  const name = String(manual.value.name || '').trim()
+  if (!code || !name) {
+    user.toast('请填写代码和名称')
+    return
+  }
+  const shares = Number(manual.value.shares)
+  const cost = Number(manual.value.cost)
+  if (!Number.isFinite(shares) || shares < 0) {
+    user.toast('请填写股数')
+    return
+  }
+  const { added, updated } = portfolio.upsertHoldings(portfolioId.value, [
+    {
+      code,
+      name,
+      ex: inferHoldingEx(code, manual.value.ex),
+      shares,
+      cost: Number.isFinite(cost) ? cost : 0,
+    },
+  ])
+  user.track?.(user.EVENT_TYPES?.TRADE_BUY, {
+    stockCode: code,
+    stockName: name,
+    tradePrice: Number.isFinite(cost) ? cost : 0,
+    tradeAmount: shares * (Number.isFinite(cost) ? cost : 0),
+  })
+  user.toast(added ? `已添加 ${name}` : updated ? `已更新 ${name}` : '没有写入')
+  resetManual()
 }
 
 function toggleAll(v) {
@@ -411,6 +609,7 @@ function commit() {
     /* ignore */
   }
   close()
+  portfolio.autoFetchAll().catch(() => {})
 }
 
 function onExtMessage(event) {
@@ -436,6 +635,8 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('paste', onPasteImage)
   window.removeEventListener('message', onExtMessage)
+  clearTimeout(pasteTimer)
+  if (shotPreview.value) URL.revokeObjectURL(shotPreview.value)
 })
 </script>
 
@@ -471,6 +672,10 @@ onUnmounted(() => {
   border: 1px solid var(--sep, rgba(255, 255, 255, 0.1));
   border-radius: 12px 12px 0 0;
   color: var(--tp, #ece6d8);
+}
+.imp-panel[data-drop='1'] {
+  outline: 2px dashed var(--accent, #c5a059);
+  outline-offset: -6px;
 }
 @media (min-width: 720px) {
   .imp-panel {
@@ -525,8 +730,6 @@ onUnmounted(() => {
     var(--surface-2, rgba(21, 23, 26, 0.92));
   border: 1px solid color-mix(in srgb, var(--accent, #c5a059) 28%, var(--sep, rgba(236, 230, 216, 0.1)));
   border-radius: 2px;
-  transition: border-color 0.2s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    box-shadow 0.2s var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 .imp-dest:focus-within {
   border-color: var(--accent, #c5a059);
@@ -567,20 +770,13 @@ onUnmounted(() => {
   margin: 0;
   padding: 2px 0 2px 14px;
   border: 0;
-  border-radius: 0;
   background: transparent;
   color: var(--tp, #ece6d8);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-  cursor: pointer;
   outline: none;
-}
-.imp-dest[data-single='0'] .imp-select {
-  padding-top: 4px;
-  padding-bottom: 4px;
+  cursor: pointer;
 }
 .imp-dest[data-single='1'] .imp-select {
   cursor: default;
@@ -590,7 +786,7 @@ onUnmounted(() => {
   display: none;
 }
 .imp-select option {
-  background: #121416;
+  background: var(--bg, #0a0b0c);
   color: var(--tp, #ece6d8);
 }
 .imp-dest-chev {
@@ -603,32 +799,16 @@ onUnmounted(() => {
   border-bottom: 1.5px solid var(--accent, #c5a059);
   transform: translateY(-65%) rotate(45deg);
   pointer-events: none;
-  opacity: 0.9;
-}
-.imp-dest-hint {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--tt, #6e6960);
 }
 .imp-seg {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 2px;
   padding: 3px;
+  margin: 10px 0 8px;
   background: rgba(8, 9, 10, 0.55);
   border: 1px solid var(--sep, rgba(236, 230, 216, 0.1));
   border-radius: 2px;
-}
-.imp-seg-channel {
-  display: flex;
-  width: 100%;
-  max-width: 420px;
-  margin-bottom: 12px;
-}
-.imp-seg-channel .imp-seg-btn {
-  flex: 1;
-  justify-content: center;
 }
 .imp-seg-btn {
   appearance: none;
@@ -638,40 +818,19 @@ onUnmounted(() => {
   font: inherit;
   font-size: 12px;
   font-weight: 650;
-  letter-spacing: 0.01em;
-  padding: 9px 12px;
-  border-radius: 1px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition:
-    color 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    background 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    transform 0.12s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    box-shadow 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.imp-seg-btn:hover:not(.on) {
-  color: var(--tp, #ece6d8);
-  background: rgba(236, 230, 216, 0.05);
-}
-.imp-seg-btn:active {
-  transform: scale(0.98);
 }
 .imp-seg-btn.on {
   color: #1a1610;
   background: var(--accent, #c5a059);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-.imp-seg-btn.on:hover {
-  background: var(--accent-hover, #a8843f);
-  color: #1a1610;
 }
 .imp-ghost {
   appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   min-height: 34px;
-  height: 34px;
   padding: 0 14px;
   border: 1px solid color-mix(in srgb, var(--accent, #c5a059) 32%, var(--sep, rgba(236, 230, 216, 0.1)));
   border-radius: 2px;
@@ -680,73 +839,26 @@ onUnmounted(() => {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  text-decoration: none;
   cursor: pointer;
-  white-space: nowrap;
-  transition:
-    transform 0.12s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    background 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    border-color 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    color 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    box-shadow 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.imp-ghost:hover:not(:disabled) {
-  color: var(--accent, #c5a059);
-  background: var(--accent-soft, rgba(197, 160, 89, 0.12));
-  border-color: color-mix(in srgb, var(--accent, #c5a059) 55%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, #c5a059) 18%, transparent);
-}
-.imp-ghost:active:not(:disabled) {
-  transform: translateY(1px) scale(0.98);
 }
 .imp-ghost:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.imp-honest {
-  margin: 0 0 10px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--ts, #9a9488);
-}
-.imp-login {
-  margin-bottom: 16px;
-  padding: 14px 14px 12px;
-  border: 1px solid color-mix(in srgb, var(--accent, #c5a059) 22%, var(--sep, rgba(236, 230, 216, 0.1)));
-  background:
-    linear-gradient(135deg, rgba(197, 160, 89, 0.07), transparent 42%),
-    rgba(12, 13, 14, 0.55);
-  border-radius: 2px;
-}
-.imp-login-lead {
-  margin: 0 0 12px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--tp, #ece6d8);
-}
-.imp-login-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
 .imp-ol {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   padding-left: 1.2rem;
   font-size: 12px;
   line-height: 1.55;
   color: var(--ts, #9a9488);
 }
-.imp-ol code {
-  font-size: 11px;
-}
 .imp-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin: 12px 0;
+  margin: 4px 0 12px;
   border-bottom: 1px solid var(--sep, rgba(255, 255, 255, 0.08));
-  padding-bottom: 0;
 }
 .imp-tabs button {
   appearance: none;
@@ -755,33 +867,133 @@ onUnmounted(() => {
   background: transparent;
   color: var(--ts, #9a9488);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
-  padding: 10px 12px 12px;
+  padding: 10px 14px 12px;
   cursor: pointer;
-  transition: color 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.imp-tabs button::after {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 0;
-  height: 2px;
-  background: transparent;
-  transition: background 0.18s var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.imp-tabs button:hover {
-  color: var(--tp, #ece6d8);
 }
 .imp-tabs button.on {
   color: var(--accent, #c5a059);
 }
 .imp-tabs button.on::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2px;
   background: var(--accent, #c5a059);
 }
 .imp-body {
   margin-bottom: 14px;
+}
+.imp-manual {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.imp-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--ts, #9a9488);
+}
+.imp-field input,
+.imp-field select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--sep, rgba(236, 230, 216, 0.12));
+  border-radius: 2px;
+  background: transparent;
+  color: var(--tp, #ece6d8);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+.imp-manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.imp-suggest {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: var(--bg, #0a0b0c);
+  border: 1px solid var(--sep, rgba(236, 230, 216, 0.12));
+  border-radius: 2px;
+  max-height: 240px;
+  overflow: auto;
+}
+.imp-suggest li {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  min-height: 44px;
+  color: var(--tp, #ece6d8);
+}
+.imp-suggest li:hover {
+  background: var(--accent-soft, rgba(197, 160, 89, 0.12));
+}
+.imp-suggest em {
+  font-style: normal;
+  color: var(--tt, #6e6960);
+}
+.imp-drop {
+  display: grid;
+  gap: 6px;
+  padding: 22px 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent, #c5a059) 40%, var(--sep, rgba(236, 230, 216, 0.12)));
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--ts, #9a9488);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.imp-drop strong {
+  color: var(--tp, #ece6d8);
+  font-size: 14px;
+}
+.imp-shot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.imp-file-label {
+  position: relative;
+  cursor: pointer;
+}
+.imp-file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.imp-preview {
+  display: block;
+  margin-top: 10px;
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border: 1px solid var(--sep, rgba(255, 255, 255, 0.08));
+  background: #000;
 }
 .imp-ta {
   width: 100%;
@@ -797,10 +1009,32 @@ onUnmounted(() => {
   color: var(--ts, #9a9488);
   line-height: 1.5;
 }
+.imp-hint a {
+  color: var(--accent, #c5a059);
+}
 .imp-ocr {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--accent, #c5a059);
+}
+.imp-help {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--sep, rgba(236, 230, 216, 0.1));
+  border-radius: 2px;
+  font-size: 13px;
+  color: var(--ts, #9a9488);
+}
+.imp-help summary {
+  cursor: pointer;
+  color: var(--tp, #ece6d8);
+  font-weight: 650;
+}
+.imp-login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 .imp-warn {
   margin-bottom: 12px;
@@ -808,7 +1042,36 @@ onUnmounted(() => {
   border: 1px solid rgba(197, 160, 89, 0.35);
   background: rgba(197, 160, 89, 0.06);
   font-size: 12px;
+}
+.imp-report {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--sep, rgba(236, 230, 216, 0.12));
+  background: rgba(8, 10, 12, 0.35);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.imp-report p {
+  margin: 0;
+}
+.imp-report ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.imp-report li {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--ts, #9a9488);
+}
+.imp-report code {
   color: var(--tp, #ece6d8);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12px;
+  word-break: break-all;
 }
 .imp-review-head {
   display: flex;
@@ -846,7 +1109,6 @@ onUnmounted(() => {
 }
 .imp-cell {
   width: 72px;
-  max-width: 100%;
   font: inherit;
   font-size: 12px;
 }

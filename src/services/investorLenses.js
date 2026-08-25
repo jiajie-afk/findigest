@@ -51,6 +51,10 @@ export function extractFacts(financials = {}, valuationResult = {}) {
     profitGrowth: num(f.profitGrowth),
     revenueGrowth: num(f.revenueGrowth),
     dividendYield: num(f.dividendYield),
+    cashConversion:
+      num(v.desk?.oe?.cashConversion) ??
+      (num(f.ocf) != null && num(f.profit) > 0 ? num(f.ocf) / num(f.profit) : null),
+    ownerEarningsUsed: num(v.desk?.oe?.blendedOe),
     price: num(f.price) ?? num(v.price),
     mos: num(v.marginOfSafety),
     quality: v.quality || null,

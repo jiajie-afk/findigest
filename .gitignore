@@ -37,6 +37,9 @@ video-douyin-findigest/node_modules/
 video-douyin-findigest-remotion/
 *.mp4
 
+# Local 1k desk runs (engine JSON + MiMo notes; never commit keys)
+scripts/.desk-run/
+
 # Local agent / review scratch — not part of the product
 /Grok*.md
 /AI*.md

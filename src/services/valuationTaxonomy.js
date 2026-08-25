@@ -169,7 +169,7 @@ export const ARCHETYPE_META = {
     method: 'Owner Earnings × 保守合理PE',
     buffett: '资本轻、可预见现金流；wonderful at fair price',
     munger: '宽护城河优先；宁可贵一点买伟大企业',
-    mosBuyMin: 12, // 优质企业允许更小安全边际
+    mosBuyMin: 20, // 特许经营仍要 20%+：好生意≠免安全边际
     competenceDefault: 'easy',
     inputs: ['EPS/所有者盈余', '毛利率/净利率', 'ROE', '行业PE带'],
     assumptions: ['护城河可持续', '现金转化接近报表利润', '不做品牌溢价自动加成'],
@@ -277,7 +277,7 @@ export const ARCHETYPE_META = {
     method: '稳定DCF + 股息锚定',
     buffett: '可预测性优先于增速',
     munger: '无聊常是优点',
-    mosBuyMin: 18,
+    mosBuyMin: 20,
     competenceDefault: 'easy',
     inputs: ['稳定OE/EPS', '贴现假设', '股息/费率线索'],
     assumptions: ['现金流可预测优先于增速', '监管收益率大致约束估值', '利率敏感'],
@@ -450,6 +450,19 @@ export function assessQuality(fin, archetype, name = '') {
     if (debt > 70) {
       score -= 2
       notes.push('高负债(逆向风险)')
+    }
+  }
+
+  const ocf = +(fin.ocf || 0)
+  const profitYi = +(fin.profit || 0)
+  if (profitYi > 0.05 && ocf) {
+    const conv = ocf / profitYi
+    if (conv >= 0.9) {
+      score += 1
+      notes.push(`现金转化${conv.toFixed(2)}（>0.9）`)
+    } else if (conv < 0.5) {
+      score -= 1
+      notes.push(`现金转化${conv.toFixed(2)}（报表利润含金量弱）`)
     }
   }
 

@@ -50,6 +50,10 @@
           {{ portfolioMeaning || '查看持仓暴露 →' }}
         </router-link>
       </p>
+      <p v-if="cctvHits.length" class="sd-row">
+        <span class="sd-k">要闻</span>
+        <span>{{ cctvHits.length }} 条关这只 · 完整联播在事件页，不是买卖信号</span>
+      </p>
     </section>
 
     <details class="fd-density-fold stock-analyze-fold" :open="!isNarrow">
@@ -136,6 +140,7 @@ import { useUserStore } from '@/store/user'
 import { useBillingStore } from '@/store/billing'
 import { getIndustry } from '@/services/industry.js'
 import { fetchQuoteCached, hydrateFinancial } from '@/services/api.js'
+import { inferHoldingEx } from '@/services/quotesRefresh.js'
 import {
   fetchManagement,
   loadMgmtComments,
@@ -202,7 +207,7 @@ let scrollMarks = new Set()
 const code = computed(() => route.params.code)
 const holding = computed(() => portfolio.findHolding(code.value))
 const stockName = computed(() => portfolio.nameOf(code.value))
-const isHK = computed(() => holding.value?.ex === 'HK' || (code.value && code.value.length <= 5 && !code.value.startsWith('6') && !code.value.startsWith('0') && !code.value.startsWith('3')))
+const isHK = computed(() => inferHoldingEx(code.value, holding.value?.ex) === 'HK')
 const currency = computed(() => (isHK.value ? 'HK$' : '¥'))
 const industry = computed(() => getIndustry(code.value, stockName.value))
 const analysis = computed(() => portfolio.stockAnalyses[code.value])
@@ -210,11 +215,12 @@ const sent = computed(() => analysis.value?.sent || null)
 const news = computed(() => analysis.value?.news || [])
 const futureEvents = computed(() => {
   const fromAnalysis = analysis.value?.futureEvents || analysis.value?.sent?.futureEvents || []
+  const codeStr = String(code.value || '')
   const fromStore = [
     ...(eventStore.autoEvents || []),
     ...(eventStore.manualEvents || []),
   ]
-    .filter((e) => String(e.related_stock_codes || '').includes(String(code.value || '')))
+    .filter((e) => String(e.related_stock_codes || '').includes(codeStr))
     .map((e) => {
       const src = resolveEventSource(e, code.value)
       return {
@@ -233,6 +239,25 @@ const futureEvents = computed(() => {
           : null,
       }
     })
+  const fromCctv = (eventStore.cctvAnnotated || [])
+    .filter((e) => (e.relatedHoldings || []).some((h) => String(h.code) === codeStr))
+    .map((e) => {
+      const hit = (e.relatedHoldings || []).find((h) => String(h.code) === codeStr)
+      const src = resolveEventSource(e, code.value)
+      return {
+        title: e.title,
+        date: e.event_date || '待定',
+        certainty: 'confirmed',
+        importance: e.tier === 's' ? 5 : e.tier === 'a' ? 4 : 3,
+        category: 'policy_macro',
+        categoryLabel: hit?.strength === 'strong' ? '关我仓·点名' : '关我仓·行业',
+        reason: hit?.why || '要闻对齐',
+        desc: e.description || '',
+        source: src.source || e.source || '央视网',
+        url: src.url || e.source_url || '',
+        tradeHint: null,
+      }
+    })
   const fromNews = (fromAnalysis || []).map((e) => {
     const src = resolveEventSource(e, code.value)
     return {
@@ -241,7 +266,7 @@ const futureEvents = computed(() => {
       source: e.source || src.source,
     }
   })
-  const merged = [...fromStore, ...fromNews]
+  const merged = [...fromCctv, ...fromStore, ...fromNews]
   const seen = new Set()
   return merged.filter((e) => {
     const k = `${e.title}|${e.date}`
@@ -251,17 +276,29 @@ const futureEvents = computed(() => {
   })
 })
 
+const cctvHits = computed(() =>
+  (eventStore.cctvAnnotated || []).filter((e) =>
+    (e.relatedHoldings || []).some((h) => String(h.code) === String(code.value || '')),
+  ),
+)
+
 const mosExplain = computed(() => {
   const d = fin.value?.dcf
   const m = fin.value?.marginOfSafety
   if (m == null || !d) return ''
+  const desk = d.desk
   const conf =
     d.mosConfidence === 'low' ? '置信度低' : d.mosConfidence === 'medium' ? '置信度中' : '置信度尚可'
   const anchor = d.primaryAnchor ? `主锚 ${d.primaryAnchor}。` : ''
+  const req = desk?.mosNeed ? `巴菲特门槛 ${desk.mosNeed}%（${desk.mosTier?.band || ''}）。` : ''
+  const dual =
+    desk?.mosModel != null
+      ? `模型MoS ${desk.mosModel}%（相对现价）；熊档缓冲 ${desk.mosVsBear ?? '—'}%（相对IV下限）。`
+      : ''
   if (d.mosConfidence === 'low') {
-    return `${anchor}${conf}：缺关键账面/现金流时不作精确目标价。巴菲特：不确定时缩小承诺，而不是放大折现戏剧性。`
+    return `${anchor}${conf}：${desk?.recon?.summary || '缺关键账面/现金流时不作精确目标价'}。${req}巴菲特：不确定时缩小承诺，而不是放大折现戏剧性。`
   }
-  return `安全边际按「保守内在价值」计算（非乐观DCF）。${anchor}现价对熊/基/牛：¥${d.ivBear ?? '—'} / ¥${d.ivBase ?? '—'} / ¥${d.ivBull ?? '—'}。${conf}。巴菲特：只有价格显著低于保守估值才叫有安全边际；好公司卖在公允价 ≠ 深度低估。`
+  return `安全边际按模型内在价值计算，完整数据时不向现价收敛。${anchor}${dual}${req}现价对熊/基/牛：¥${d.ivBear ?? '—'} / ¥${d.ivBase ?? '—'} / ¥${d.ivBull ?? '—'}。${conf}。好公司卖在公允价 ≠ 深度低估。`
 })
 
 const loading = computed(() => !!analysis.value?.loading)
@@ -364,6 +401,14 @@ const metrics = computed(() => {
       label: '估值EPS',
       value: modelEps != null ? '¥' + Number(modelEps).toFixed(2) : f.eps != null ? '¥' + Number(f.eps).toFixed(2) : '—',
     },
+    {
+      label: '现金转化',
+      value: f.dcf?.desk?.oe?.cashConversion != null ? String(f.dcf.desk.oe.cashConversion) : '—',
+    },
+    {
+      label: '所有者盈余',
+      value: f.dcf?.desk?.oe?.blendedOe != null ? '¥' + Number(f.dcf.desk.oe.blendedOe).toFixed(2) : '—',
+    },
   ]
 })
 
@@ -402,7 +447,7 @@ function onScroll() {
 async function refreshQuote() {
   const reqCode = code.value
   if (!reqCode) return
-  const ex = holding.value?.ex || (reqCode.startsWith('6') ? 'SH' : 'SZ')
+  const ex = inferHoldingEx(reqCode, holding.value?.ex)
   quoteError.value = ''
   try {
     const q = await fetchQuoteCached(reqCode, ex)
@@ -552,6 +597,7 @@ watch(
       await refreshQuote()
       if (c !== code.value) return
       await loadManagement()
+      if (!eventStore.cctvItems.length) eventStore.loadCctvNews?.().catch(() => {})
     } finally {
       if (c === code.value) pageLoading.value = false
     }
@@ -632,7 +678,7 @@ onBeforeUnmount(() => {
   padding: 14px 16px;
   border: 1px solid var(--sep);
   border-radius: 10px;
-  background: var(--card);
+  background: transparent;
 }
 .sd-row {
   display: grid;

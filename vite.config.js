@@ -9,6 +9,7 @@ import vaultHandler from './api/vault.js'
 import billingHandler from './api/billing.js'
 import adminHandler from './api/admin.js'
 import usageHandler from './api/usage.js'
+import cctvNewsHandler from './api/cctv-news.js'
 
 /** Same /api/proxy allowlist handler for Vite dev + preview (matches Vercel). */
 function findigestApiProxy() {
@@ -58,6 +59,11 @@ function findigestApiProxy() {
     server.middlewares.use(
       mountVercelHandler(holdingsLocalHandler, {
         match: (url) => url.startsWith('/api/holdings-local'),
+      }),
+    )
+    server.middlewares.use(
+      mountVercelHandler(cctvNewsHandler, {
+        match: (url) => url.startsWith('/api/cctv-news'),
       }),
     )
   }

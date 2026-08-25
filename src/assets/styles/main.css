@@ -20,8 +20,11 @@
   color-scheme: dark;
   --bg: #0a0b0c;
   --bg-deep: #060607;
-  --surface: rgba(18, 20, 22, 0.72);
-  --surface-2: rgba(21, 23, 26, 0.92);
+  --bg2: transparent;
+  --panel: transparent;
+  --surface: transparent;
+  --surface-2: transparent;
+  --card: transparent;
   --tp: #ece6d8;
   --ts: #9a9488;
   --tt: #6e6960;
@@ -57,8 +60,11 @@
   color-scheme: dark;
   --bg: #0a0b0c;
   --bg-deep: #060607;
-  --surface: rgba(18, 20, 22, 0.72);
-  --surface-2: rgba(21, 23, 26, 0.92);
+  --bg2: transparent;
+  --panel: transparent;
+  --surface: transparent;
+  --surface-2: transparent;
+  --card: transparent;
   --tp: #ece6d8;
   --ts: #9a9488;
   --tt: #6e6960;

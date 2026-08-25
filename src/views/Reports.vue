@@ -22,7 +22,10 @@
         </div>
         <div v-if="active === i && r.body" class="rpt-body">{{ r.body }}</div>
       </div>
-      <div v-if="!events.reports.length" class="empty">暂无报告</div>
+      <div v-if="!events.reports.length" class="empty">
+        <p>还没有存档。先有持仓，再在今日生成简报。</p>
+        <router-link class="btn bp" to="/app">去今日</router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -70,4 +73,6 @@ function formatDate(d) {
   border-radius: var(--rx);
 }
 .empty { padding: 48px; text-align: center; color: var(--tt); }
+.empty p { margin: 0 0 16px; }
+.empty .btn { text-decoration: none; }
 </style>

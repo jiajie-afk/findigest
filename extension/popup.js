@@ -6,8 +6,7 @@ const sendBtn = document.getElementById('send')
 const copyBtn = document.getElementById('copy')
 
 const LOGIN = {
-  eastmoney: 'https://jywg.18.cn/Login',
-  ths: 'https://eq.10jqka.com.cn/',
+  eastmoney: 'https://passport2.eastmoney.com/pub/login?backurl=https%3A%2F%2Fwww.eastmoney.com%2F',
 }
 
 function setStatus(msg, isErr = true) {
@@ -48,7 +47,14 @@ document.getElementById('open-em').addEventListener('click', () => {
   chrome.tabs.create({ url: LOGIN.eastmoney })
 })
 document.getElementById('open-ths').addEventListener('click', () => {
-  chrome.tabs.create({ url: LOGIN.ths })
+  setStatus(
+    '同花顺网页交易打不开。请用电脑端交易/F12 + 同花顺 App 扫码，再复制持仓表。不要打开官网通行证登录。',
+  )
+})
+document.getElementById('open-tiger').addEventListener('click', () => {
+  setStatus(
+    '老虎网页交易国内会超时。请用 Tiger Trade App 导出持仓，不要打开国际站个人中心。',
+  )
 })
 
 document.getElementById('scrape').addEventListener('click', async () => {
@@ -62,7 +68,7 @@ document.getElementById('scrape').addEventListener('click', async () => {
   const okHost =
     /eastmoney|18\.cn|10jqka|thsi\.cn|tiger|itiger/i.test(url)
   if (!okHost) {
-    setStatus('请先点上方按钮打开东方财富或同花顺登录页，登录后再读取。')
+    setStatus('请先打开已登录的持仓页再读取。同花顺/老虎网页交易目前打不开。')
     return
   }
 

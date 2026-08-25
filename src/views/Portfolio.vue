@@ -3,16 +3,21 @@
     <div class="page-head">
       <div>
         <h1 class="pt">持仓管理</h1>
-        <p class="pt-sub">多组合追踪 · 盈亏与建议仓位一目了然</p>
+        <p class="pt-sub">{{ isEmpty ? '先导入，再谈盈亏' : '多组合追踪 · 盈亏与建议仓位一目了然' }}</p>
       </div>
       <div class="page-actions">
-        <button class="btn bs sm" @click="showImport = true">
+        <button class="btn bp sm" @click="showImport = true">
           <PhUploadSimple :size="15" :weight="'bold'" />
           导入持仓
         </button>
-        <button class="btn bp sm" :disabled="portfolio.autoFetching" @click="runFetch">
+        <button
+          v-if="!isEmpty"
+          class="btn bs sm"
+          :disabled="portfolio.autoFetching"
+          @click="runFetch"
+        >
           <PhBroadcast :size="15" :weight="'bold'" />
-          {{ portfolio.autoFetching ? '采集中…' : '一键采集' }}
+          {{ portfolio.autoFetching ? '刷新中…' : '刷新行情' }}
         </button>
         <button class="btn bs sm" @click="showAdd = !showAdd">
           <PhPlus :size="15" :weight="'bold'" />
@@ -21,7 +26,13 @@
       </div>
     </div>
 
-    <p class="import-hint">导入持仓 = 从券商 CSV / 粘贴 / 截图 / 扩展同步账户；一键采集 = 刷新已有持仓行情。</p>
+    <p class="import-hint">
+      {{
+        isEmpty
+          ? '可手动填一只，或粘贴券商表格 / 上传 CSV / 拍持仓截图。没有股票就不能刷新行情。'
+          : '导入可增改持仓。刷新行情只更新已有股票的现价，不会替你下单。'
+      }}
+    </p>
 
     <div v-if="bridgeBanner" class="bridge-banner" role="status">
       <div>
@@ -35,9 +46,18 @@
       <button type="button" class="btn bs sm" @click="dismissBridge">忽略</button>
     </div>
 
-    <ImportHoldingsWizard v-model="showImport" />
+    <ImportHoldingsWizard v-model="showImport" :start-tab="route.query.import === 'manual' ? 'manual' : 'paste'" />
 
-    <div class="overview-grid">
+    <section v-if="isEmpty && !showAdd" class="empty-holdings card">
+      <h2>先把持仓放进来</h2>
+      <p>没有股票就不能刷新行情、也不能算盈亏。手动填一只，或从券商表导入。</p>
+      <div class="empty-holdings-actions">
+        <button class="btn bp" type="button" @click="showImport = true">导入持仓</button>
+        <button class="btn bs" type="button" @click="showAdd = true">手动添加</button>
+      </div>
+    </section>
+
+    <div v-if="!isEmpty" class="overview-grid">
       <div class="metric-tile af">
         <div class="ml">总成本</div>
         <div class="mv">¥{{ (portfolio.totals.cost / 10000).toFixed(1) }}万</div>
@@ -109,6 +129,7 @@
       <button class="btn bp sm" style="margin-top: 14px" @click="add">确认添加</button>
     </div>
 
+    <template v-if="!isEmpty">
     <div v-for="p in portfolio.portfolios" :key="p.id" class="card af">
       <div class="ch">
         <div>
@@ -168,6 +189,7 @@
         </table>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -181,6 +203,7 @@ import { fmtPct, fmtPrice, scoreColor } from '@/utils/format'
 import { searchUniverse } from '@/utils/universeSearch.js'
 import { readPositionSuggestion, clearPositionSuggestion } from '@/services/decisionBridge.js'
 import ImportHoldingsWizard from '@/components/portfolio/ImportHoldingsWizard.vue'
+import { summarizeFetchResult } from '@/services/quotesRefresh.js'
 
 const portfolio = usePortfolioStore()
 const user = useUserStore()
@@ -202,6 +225,8 @@ const highlightSymbol = computed(() => {
   const q = route.query.symbol
   return q ? String(q) : bridgeBanner.value?.code ? String(bridgeBanner.value.code) : ''
 })
+
+const isEmpty = computed(() => !(portfolio.allHoldings || []).length)
 
 function syncBridgeFromRoute() {
   const fromStore = readPositionSuggestion()
@@ -351,8 +376,13 @@ function remove(pid, hid) {
   user.toast('已删除')
 }
 async function runFetch() {
-  await portfolio.autoFetchAll()
-  user.toast('采集完成')
+  if (isEmpty.value) {
+    user.toast('先导入持仓，才能刷新行情')
+    return
+  }
+  const result = await portfolio.autoFetchAll()
+  const msg = summarizeFetchResult(result)
+  if (msg) user.toast(msg)
 }
 </script>
 
@@ -375,6 +405,29 @@ async function runFetch() {
   font-size: 12px;
   color: var(--ts);
   line-height: 1.45;
+}
+.empty-holdings {
+  padding: 28px 24px;
+  margin-bottom: 8px;
+}
+.empty-holdings h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--tp);
+}
+.empty-holdings p {
+  margin: 0 0 16px;
+  max-width: 28rem;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ts);
+}
+.empty-holdings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .bridge-banner {
   display: flex;
@@ -425,9 +478,9 @@ async function runFetch() {
   margin: 0;
   padding: 6px 0;
   list-style: none;
-  background: var(--card, #141618);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--sep, rgba(236, 230, 216, 0.12));
+  border-radius: 2px;
   max-height: 240px;
   overflow: auto;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);

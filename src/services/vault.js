@@ -66,6 +66,26 @@ export function emptyPortfolio() {
   return [{ id: 1, name: '我的持仓', holdings: [] }]
 }
 
+/** New account starter — one lot of 贵州茅台. Logged-out / error paths stay empty. */
+export function starterPortfolio() {
+  return [
+    {
+      id: 1,
+      name: '我的持仓',
+      holdings: [
+        {
+          id: 1,
+          code: '600519',
+          name: '贵州茅台',
+          ex: 'SH',
+          shares: 100,
+          cost: 1296,
+        },
+      ],
+    },
+  ]
+}
+
 export function listAccounts() {
   try {
     return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]')
@@ -247,7 +267,7 @@ export function pickVaultWinner(accountId, remoteUpdatedAt) {
   return 'equal'
 }
 
-/** Wipe vault keys and seed a blank private desk */
+/** Wipe vault keys and seed a new desk (default holding: 贵州茅台) */
 export function initFreshVault(accountId) {
   const prefix = vaultPrefix(accountId)
   const toRemove = []
@@ -257,7 +277,7 @@ export function initFreshVault(accountId) {
   }
   toRemove.forEach((k) => localStorage.removeItem(k))
 
-  localStorage.setItem(prefix + 'fd_portfolios', JSON.stringify(emptyPortfolio()))
+  localStorage.setItem(prefix + 'fd_portfolios', JSON.stringify(starterPortfolio()))
   localStorage.setItem(prefix + 'fd_analyses', JSON.stringify({}))
   localStorage.setItem(prefix + 'fd_manual_events', JSON.stringify([]))
   localStorage.setItem(

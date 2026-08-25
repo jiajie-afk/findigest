@@ -29,11 +29,12 @@
           <span>新密码</span>
           <input v-model="pwNew" type="password" autocomplete="new-password" placeholder="至少 8 位，含字母和数字" />
         </label>
+        <p v-if="pwNew && !pwStrength.ok" class="hint">{{ pwStrength.message }}</p>
         <label class="fld">
           <span>确认新密码</span>
           <input v-model="pwNew2" type="password" autocomplete="new-password" />
         </label>
-        <button type="button" class="btn bp sm" :disabled="auth.busy || !pwOld || !pwNew" @click="doChangePassword">
+        <button type="button" class="btn bp sm" :disabled="auth.busy || !pwOld || !pwNew || !pwStrength.ok" @click="doChangePassword">
           保存新密码
         </button>
         <p class="hint" style="margin-top: 8px">
@@ -379,6 +380,7 @@ import { useAuthStore } from '@/store/auth'
 import { useBillingStore } from '@/store/billing'
 import ProfileScenario from '@/components/settings/ProfileScenario.vue'
 import { SCENARIO_QUESTION_COUNT, ESSENTIAL_QUESTION_COUNT, ESSENTIAL_QUESTION_IDS, essentialsDone } from '@/services/profiling.js'
+import { validatePasswordStrength } from '@/services/crypto.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -436,6 +438,7 @@ const testingAi = ref(false)
 const pwOld = ref('')
 const pwNew = ref('')
 const pwNew2 = ref('')
+const pwStrength = computed(() => validatePasswordStrength(pwNew.value))
 let saveTimer = null
 let hintTimer = null
 let ready = false
@@ -624,6 +627,10 @@ async function syncCloud() {
 async function doChangePassword() {
   if (pwNew.value !== pwNew2.value) {
     user.toast('两次新密码不一致')
+    return
+  }
+  if (!pwStrength.value.ok) {
+    user.toast(pwStrength.value.message || '新密码太弱')
     return
   }
   const ok = await auth.changePassword({ oldPassword: pwOld.value, newPassword: pwNew.value })

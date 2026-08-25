@@ -11,6 +11,7 @@ function firstCode(related) {
 function hostLabel(url) {
   try {
     const h = new URL(url).hostname.replace(/^www\./, '')
+    if (h.includes('cctv')) return '央视网'
     if (h.includes('eastmoney')) return '东方财富'
     if (h.includes('federalreserve')) return '美联储'
     if (h.includes('sina')) return '新浪财经'

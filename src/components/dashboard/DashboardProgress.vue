@@ -1,7 +1,7 @@
 <template>
   <div v-if="portfolio.autoFetching" class="section af">
     <div class="progress-row" style="padding-left: 0; padding-right: 0">
-      <span>采集 {{ portfolio.fetchProgress.current }}</span>
+      <span>刷新 {{ portfolio.fetchProgress.current }}</span>
       <div class="progress-track">
         <div class="progress-bar" :style="{ width: progressPct + '%' }" />
       </div>

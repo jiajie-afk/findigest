@@ -18,11 +18,11 @@
   color-scheme: dark;
   --bg: #0a0b0c;
   --bg-deep: #060607;
-  --bg2: #121416;
-  --panel: #121416;
-  --surface: rgba(18, 20, 22, 0.72);
-  --surface-2: rgba(21, 23, 26, 0.92);
-  --card: #121416;
+  --bg2: transparent;
+  --panel: transparent;
+  --surface: transparent;
+  --surface-2: transparent;
+  --card: transparent;
   --tp: #ece6d8;
   --ts: #9a9488;
   --tt: #6e6960;
@@ -338,7 +338,7 @@
 [data-style='luxury'] .fld input,
 [data-style='luxury'] .fld select,
 [data-style='luxury'] .fld textarea {
-  background: rgba(18, 20, 22, 0.9);
+  background: transparent;
   border: 1px solid rgba(236, 230, 216, 0.12);
   border-radius: 2px;
   color: var(--tp);
@@ -372,7 +372,7 @@
 
 /* ── Actions / briefing ── */
 [data-style='luxury'] .action-row {
-  background: rgba(18, 20, 22, 0.65);
+  background: transparent;
   border-color: rgba(236, 230, 216, 0.1);
   border-radius: 2px;
 }
@@ -406,7 +406,7 @@
 }
 
 [data-style='luxury'] .toast {
-  background: #121416;
+  background: var(--bg);
   border: 1px solid rgba(197, 160, 89, 0.28);
   color: var(--tp);
   border-radius: 2px;

@@ -1,4 +1,6 @@
 const FINDIGEST_URLS = [
+  'https://findigest.cn/portfolio?import=extension',
+  'https://www.findigest.cn/portfolio?import=extension',
   'http://127.0.0.1:5173/portfolio?import=extension',
   'http://localhost:5173/portfolio?import=extension',
   'https://findigest-three.vercel.app/portfolio?import=extension',

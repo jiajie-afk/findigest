@@ -73,6 +73,83 @@
           行情来源：<span class="source-badge" :class="'source-' + (fin.quoteSource || fin.dcf.quoteSource || '')">{{ dataSourceLabel }}</span>
         </p>
       </div>
+      <div v-if="desk" class="desk-audit">
+        <p class="desk-title">
+          研究台核对
+          <span v-if="desk.five?.overall" class="desk-overall">综合 {{ starBar(desk.five.overall) }}</span>
+        </p>
+        <p class="desk-posture">{{ desk.posture }}</p>
+        <p
+          class="desk-recon"
+          :class="desk.recon?.pass ? 'desk-recon--ok' : 'desk-recon--bad'"
+        >
+          {{ desk.recon?.summary }}
+        </p>
+        <div v-if="desk.five?.dims?.length" class="desk-stars">
+          <div v-for="d in desk.five.dims" :key="d.id" class="desk-star-row">
+            <span class="desk-star-name">{{ d.name }}</span>
+            <span class="desk-star-bar">{{ starBar(d.stars) }}</span>
+            <span class="desk-star-ev">{{ d.evidence }}</span>
+          </div>
+        </div>
+        <p v-if="desk.five?.holdYears" class="desk-line">
+          框架持有期 {{ desk.five.holdYears }} ·
+          <template v-if="desk.fork === 'great_wait'">好生意等价格</template>
+          <template v-else-if="desk.fork === 'cheap_no_moat'">便宜但护城河弱（烟蒂口径）</template>
+          <template v-else>质量与价格未走极端</template>
+        </p>
+        <p v-if="desk.aesop?.line" class="desk-line">伊索三问：{{ desk.aesop.line }}</p>
+        <p class="desk-line">
+          模型MoS
+          <strong>{{ fmtNum(desk.mosModel) }}%</strong>
+          · 相对熊档缓冲
+          <strong>{{ fmtNum(desk.mosVsBear) }}%</strong>
+          · 要求
+          <strong>{{ desk.mosNeed }}%</strong>
+          （巴菲特 {{ desk.mosTier?.band }}）
+        </p>
+        <p v-if="desk.oe" class="desk-line">
+          所有者盈余 {{ desk.oe.blendedOe != null ? '¥' + desk.oe.blendedOe + '/股' : '—' }}
+          <span v-if="desk.oe.rawFcfPerShare != null"> · 原始FCF/股 ¥{{ desk.oe.rawFcfPerShare }}</span>
+          <span v-if="desk.oe.cashConversion != null"> · 现金转化 {{ desk.oe.cashConversion }}</span>
+          · {{ desk.oe.ebitdaTrap }}
+        </p>
+        <p v-if="desk.dollar?.note" class="desk-line">留存$1测试：{{ desk.dollar.note }}</p>
+        <details v-if="desk.graham" class="desk-fold">
+          <summary>
+            格雷厄姆六维
+            {{ desk.graham.applicable ? (desk.graham.score + '分') : '不适用' }}
+            <span v-if="desk.graham.trap"> · 价值陷阱嫌疑</span>
+          </summary>
+          <p v-if="!desk.graham.applicable" class="desk-line">{{ desk.graham.reason }}</p>
+          <ul v-else class="desk-list">
+            <li v-for="g in desk.graham.dims" :key="g.id">
+              {{ g.label }}：{{ g.pts == null ? '跳过' : g.pts + '/' + g.max }} · {{ g.note }}
+            </li>
+          </ul>
+          <p v-if="desk.graham.ncavLine" class="desk-line">
+            清算参考 NCAV/股 ¥{{ desk.graham.ncavLine.ncavPerShare }} · 格雷厄姆买线 ¥{{ desk.graham.ncavLine.grahamBuy }}（×0.67）
+          </p>
+        </details>
+        <details v-if="desk.hold?.items" class="desk-fold">
+          <summary>持仓复盘 · 四条卖出条件（不是下单）</summary>
+          <ul class="desk-list">
+            <li v-for="h in desk.hold.items" :key="h.id">
+              {{ h.label }} — {{ reviewLabel(h.verdict) }}。{{ h.basis }}
+            </li>
+          </ul>
+          <p class="desk-line">不应仅因这些卖：{{ (desk.hold.doNotSellFor || []).join('、') }}</p>
+        </details>
+        <details v-if="desk.sources?.rows?.length" class="desk-fold">
+          <summary>数据附录 · {{ desk.sources.rows.length }} 项可追溯</summary>
+          <ul class="desk-list">
+            <li v-for="r in desk.sources.rows" :key="r.field">
+              {{ r.field }}={{ r.value }} · {{ r.source }}{{ r.period ? ' · ' + formatAsOf(r.period) : '' }}
+            </li>
+          </ul>
+        </details>
+        <p class="desk-disclaimer">{{ desk.disclaimer }}</p>
+      </div>
       <div v-if="lensStack?.lenses?.length" class="lens-section">
         <p class="lens-section-title">两副眼镜怎么看</p>
         <p v-if="lensStack.disagreement" class="lens-disagree">
@@ -119,7 +196,7 @@
       </div>
       <div class="dcf-grid">
         <div>
-          <div class="ml ml-muted">{{ fin.dcf?.mosConfidence === 'low' ? '参考价值(低置信)' : '保守内在价值' }}</div>
+          <div class="ml ml-muted">{{ fin.dcf?.mosConfidence === 'low' ? '参考价值(低置信)' : '模型内在价值' }}</div>
           <div
             class="dcf-num"
             :class="fin.dcf?.mosConfidence === 'low' ? 'dcf-num--low' : 'dcf-num--ok'"
@@ -223,6 +300,22 @@ const methodCardSummary = computed(() => {
 })
 
 const lensStack = computed(() => props.fin?.dcf?.lensStack || null)
+const desk = computed(() => props.fin?.dcf?.desk || null)
+
+function starBar(n) {
+  const s = Math.max(0, Math.min(5, Math.round(Number(n) || 0)))
+  return '★'.repeat(s) + '☆'.repeat(5 - s)
+}
+
+function fmtNum(v) {
+  if (v == null || Number.isNaN(Number(v))) return '—'
+  return Number(v).toFixed(1)
+}
+
+function reviewLabel(v) {
+  const map = { yes: '是', no: '否', watch: '观察', unknown: '未知', 'n/a': '不适用' }
+  return map[v] || v || '—'
+}
 
 const disagreementRootLabel = computed(() => {
   const root = lensStack.value?.disagreementRoot
@@ -309,7 +402,7 @@ function shortLensVerdict(L) {
   }
 }
 .metric {
-  background: var(--card);
+  background: transparent;
   padding: 12px 14px;
   display: flex;
   justify-content: space-between;
@@ -421,6 +514,100 @@ function shortLensVerdict(L) {
   font-size: 11px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.58);
+}
+.desk-audit {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 224, 200, 0.18);
+  border-radius: 10px;
+  background: rgba(0, 20, 16, 0.28);
+}
+.desk-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.desk-overall {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: #6ee0c8;
+  font-weight: 500;
+}
+.desk-posture {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(230, 220, 180, 0.92);
+}
+.desk-recon {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.desk-recon--ok { color: #6ee0c8; }
+.desk-recon--bad { color: #ff8a96; }
+.desk-stars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.desk-star-row {
+  display: grid;
+  grid-template-columns: 7.5em 5.5em 1fr;
+  gap: 8px;
+  align-items: start;
+  font-size: 11px;
+}
+.desk-star-name { color: rgba(255, 255, 255, 0.7); }
+.desk-star-bar {
+  font-family: var(--mono, ui-monospace, monospace);
+  color: #e6c35c;
+  letter-spacing: 0.04em;
+}
+.desk-star-ev {
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.4;
+}
+.desk-line {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+}
+.desk-fold {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.desk-fold summary {
+  cursor: pointer;
+  list-style: none;
+}
+.desk-fold summary::-webkit-details-marker { display: none; }
+.desk-list {
+  margin: 6px 0 0;
+  padding: 0 0 4px 18px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+.desk-disclaimer {
+  margin: 10px 0 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.4);
+}
+@media (max-width: 640px) {
+  .desk-star-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 .method-card-disclaimer {
   margin: 6px 0 0;

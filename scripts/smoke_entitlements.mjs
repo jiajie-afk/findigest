@@ -1,8 +1,8 @@
 /**
- * Smoke: not-pro billing => cannot have pro nav / HUD / LLM flags.
+ * Smoke: membership ≠ shell. Paid Pro must still be able to sit on 基础版.
  * Usage: node scripts/smoke_entitlements.mjs
  */
-import { getEntitlements } from '../src/services/entitlements.js'
+import { getEntitlements, nextProductEdition } from '../src/services/entitlements.js'
 
 let failed = 0
 function assert(cond, msg) {
@@ -33,20 +33,80 @@ assert(
   'expired: all pro flags false',
 )
 
-const paid = getEntitlements(active, { productEdition: 'basic' })
-assert(paid.isBillingPro, 'active billing: isBillingPro')
+const paidBasic = getEntitlements(active, { productEdition: 'basic' })
+assert(paidBasic.isBillingPro, 'paid + basic: membership still active')
 assert(
-  paid.canSeeProNav && paid.canUseProHud && paid.canUseLlm && paid.canUseProdeskStyle,
-  'active billing: all can* true',
+  !paidBasic.canSeeProNav &&
+    !paidBasic.canUseProHud &&
+    !paidBasic.canUseLlm &&
+    !paidBasic.canUseProdeskStyle,
+  'paid + basic: Pro HUD/nav/LLM follow the basic shell',
 )
-assert(paid.editionProjected === 'pro', 'active billing: editionProjected pro')
+assert(paidBasic.editionProjected === 'basic', 'paid + basic: editionProjected basic')
 
-const life = getEntitlements(lifetime, { productEdition: 'basic' })
-assert(life.isBillingPro && life.canSeeProNav, 'lifetime pro: flags true')
+const paidPro = getEntitlements(active, { productEdition: 'pro' })
+assert(
+  paidPro.isBillingPro &&
+    paidPro.canSeeProNav &&
+    paidPro.canUseProHud &&
+    paidPro.canUseLlm &&
+    paidPro.canUseProdeskStyle,
+  'paid + pro: shell and membership both Pro',
+)
+assert(paidPro.editionProjected === 'pro', 'paid + pro: editionProjected pro')
 
-// Skin-only edition must never unlock remote Pro (Node has no window → not local host)
+const lifeBasic = getEntitlements(lifetime, { productEdition: 'basic' })
+assert(lifeBasic.isBillingPro, 'lifetime + basic: membership still active')
+assert(!lifeBasic.canSeeProNav, 'lifetime + basic: nav stays basic')
+
+const lifePro = getEntitlements(lifetime, { productEdition: 'pro' })
+assert(lifePro.isBillingPro && lifePro.canSeeProNav, 'lifetime + pro: flags true')
+
 const skinBasic = getEntitlements(free, { productEdition: 'basic' })
 assert(!skinBasic.isBillingPro && skinBasic.editionProjected === 'basic', 'free+basic stays basic')
+
+// Landing「进入基础版」and Settings switch must not be snapped back to Pro.
+assert(
+  nextProductEdition({
+    currentEdition: 'basic',
+    isBillingPro: true,
+    localFreePro: false,
+  }) === 'basic',
+  'paid user who picked basic stays basic',
+)
+assert(
+  nextProductEdition({
+    currentEdition: 'pro',
+    isBillingPro: true,
+    localFreePro: false,
+  }) === 'pro',
+  'paid user on pro stays pro until they switch',
+)
+assert(
+  nextProductEdition({
+    currentEdition: 'pro',
+    isBillingPro: false,
+    localFreePro: false,
+  }) === 'basic',
+  'expired Pro falls back to basic',
+)
+assert(
+  nextProductEdition({
+    currentEdition: 'basic',
+    isBillingPro: true,
+    localFreePro: false,
+    activatePro: true,
+  }) === 'pro',
+  'redeem / activatePro may enter Pro',
+)
+assert(
+  nextProductEdition({
+    currentEdition: 'pro',
+    isBillingPro: false,
+    localFreePro: true,
+  }) === 'pro',
+  'local free-Pro host may keep explicit Pro',
+)
 
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`)

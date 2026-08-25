@@ -1,49 +1,49 @@
-import { normalizeStockCode, parseNumberLoose } from '../utils/stockCode.js'
+import { normalizeStockCode, normalizeOcrStockCode, parseNumberLoose } from '../utils/stockCode.js'
+import { STOCK_NAMES, getStockName } from '../data/stock_names.js'
+import { inferHoldingEx } from './quotesRefresh.js'
 
 export const IMPORT_TEMPLATES = [
   {
     id: 'eastmoney',
     label: '东方财富',
     guide: [
-      '打开东方财富网上交易 https://jywg.18.cn/Login 。资金账号登录；若有二维码，必须用「东方财富证券」App 扫，不能用看行情的「东方财富」或微信。',
-      '进入「查询 → 资金股份」。',
-      '用扩展读取，或复制表格 / 导出 CSV 回到 FinDigest。',
+      '打开电脑端交易窗口 → 持仓 / 资金股份。',
+      '全选表格复制，或导出 CSV。',
+      '回到这里粘贴、上传，或截图导入。',
     ],
   },
   {
     id: 'ths',
     label: '同花顺',
     guide: [
-      '打开同花顺网页交易 https://eq.10jqka.com.cn/ ，用交易账号登录。',
-      '打开持仓 / 股份页。',
-      '用扩展读取；读不到则复制表格粘贴导入。',
+      '电脑端点「交易」或 F12，登录后打开持仓。',
+      '复制表格或另存 CSV。',
+      '回到这里粘贴 / 上传 / 截图。',
     ],
   },
   {
     id: 'tiger',
     label: '老虎证券',
     guide: [
-      '登录老虎证券网页版，进入 Portfolio / 持仓。',
-      '导出 CSV，或复制持仓表。',
-      '港股代码会自动识别为 HK。',
+      '在 Tiger Trade 打开持仓页。',
+      '导出 CSV，或复制表格 / 截图。',
+      '港股代码会识别为 HK。',
     ],
   },
   {
     id: 'hk_generic',
     label: '港股通用',
     guide: [
-      '适用于港股券商英文/中文持仓表。',
-      '需含 Symbol/代码、Quantity/数量、Cost/成本 等列。',
-      '也可直接粘贴表格。',
+      '表格里要有代码、数量、成本。',
+      '可直接粘贴或上传 CSV。',
     ],
   },
   {
     id: 'generic',
-    label: '自定义 / 通用',
+    label: '通用',
     guide: [
-      '任意含「代码、数量、成本」列的表格。',
-      '支持逗号/制表符/竖线分隔。',
-      '首行建议为表头。',
+      '任意含「代码、数量、成本」的表格。',
+      '支持逗号、制表符或空格分隔。',
     ],
   },
 ]
@@ -126,13 +126,14 @@ function detectDelimiter(line) {
   ]
   counts.sort((a, b) => b[1] - a[1])
   if (counts[0][1] > 0) return counts[0][0]
-  // Chinese space-separated fallback: multiple spaces
+  // OCR / 券商截图常见：单空格分隔「代码 名称 数量 成本」
+  if (line.trim().split(/\s+/).length >= 3) return 'spaces'
   if (/\s{2,}/.test(line)) return 'spaces'
   return '\t'
 }
 
 function parseRow(line, delim) {
-  if (delim === 'spaces') return line.trim().split(/\s{2,}|\t+/).map((c) => c.trim())
+  if (delim === 'spaces') return line.trim().split(/\s+/).map((c) => c.trim())
   if (delim === ',') {
     // simple CSV with quotes
     const out = []
@@ -165,19 +166,32 @@ function templateHintEx(templateId) {
   return null
 }
 
+function previewLine(raw, max = 42) {
+  const s = String(raw || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!s) return '（空行）'
+  return s.length > max ? `${s.slice(0, max)}…` : s
+}
+
+function isTotalOrCashLine(raw) {
+  return /合计|小计|total|资产账号|市值合计/i.test(String(raw || ''))
+}
+
 /**
  * Parse CSV / pasted table text into holding rows.
- * @returns {{ rows: Array, warnings: string[] }}
+ * @returns {{ rows: Array, warnings: string[], dropped: Array<{ preview: string, reason: string }> }}
  */
 export function parseHoldingsText(text, templateId = 'generic') {
   const warnings = []
+  const dropped = []
   const lines = splitLines(text)
-  if (!lines.length) return { rows: [], warnings: ['没有可解析的内容'] }
+  if (!lines.length) return { rows: [], warnings: ['没有可解析的内容'], dropped }
 
   const delim = detectDelimiter(lines[0])
   const matrix = lines.map((l) => parseRow(l, delim)).filter((r) => r.some((c) => c))
 
-  if (!matrix.length) return { rows: [], warnings: ['表格为空'] }
+  if (!matrix.length) return { rows: [], warnings: ['表格为空'], dropped }
 
   // Detect header row
   let headerIdx = 0
@@ -225,7 +239,7 @@ export function parseHoldingsText(text, templateId = 'generic') {
   }
 
   if (iCode < 0) {
-    return { rows: [], warnings: ['找不到「代码」列，请换模板或改用通用粘贴'] }
+    return { rows: [], warnings: ['找不到「代码」列，请换模板或改用通用粘贴'], dropped }
   }
   if (iShares < 0) warnings.push('未找到数量列，股数将留空供校对')
   if (iCost < 0) warnings.push('未找到成本列，成本将留空供校对')
@@ -235,7 +249,15 @@ export function parseHoldingsText(text, templateId = 'generic') {
   for (let r = start; r < matrix.length; r++) {
     const cells = matrix[r]
     const rawCode = cells[iCode]
-    if (!rawCode || /合计|小计|total|资产|现金/i.test(String(rawCode))) continue
+    const linePreview = previewLine(cells.filter(Boolean).join(' '))
+    if (!String(rawCode || '').trim()) {
+      dropped.push({ preview: linePreview, reason: '这一行没有代码' })
+      continue
+    }
+    if (isTotalOrCashLine(rawCode) || isTotalOrCashLine(linePreview)) {
+      dropped.push({ preview: linePreview, reason: '合计 / 资产行，不是持仓' })
+      continue
+    }
 
     let hintEx = null
     if (iEx >= 0) {
@@ -247,7 +269,10 @@ export function parseHoldingsText(text, templateId = 'generic') {
     if (templateId === 'hk_generic') hintEx = hintEx || 'HK'
 
     const norm = normalizeStockCode(rawCode, hintEx)
-    if (!norm) continue
+    if (!norm) {
+      dropped.push({ preview: previewLine(String(rawCode)), reason: '无法识别股票代码' })
+      continue
+    }
 
     const name = iName >= 0 ? String(cells[iName] || '').trim() : ''
     const shares = iShares >= 0 ? parseNumberLoose(cells[iShares]) : NaN
@@ -256,7 +281,7 @@ export function parseHoldingsText(text, templateId = 'generic') {
     rows.push({
       code: norm.code,
       ex: norm.ex,
-      name: name || norm.code,
+      name: name || getStockName(norm.code) || norm.code,
       shares: Number.isFinite(shares) ? shares : 0,
       cost: Number.isFinite(cost) ? cost : 0,
       selected: true,
@@ -266,7 +291,7 @@ export function parseHoldingsText(text, templateId = 'generic') {
   }
 
   if (!rows.length) warnings.push('解析结果为空，请检查分隔符或列名')
-  return { rows: dedupeRows(rows), warnings }
+  return { rows: enrichImportRows(dedupeRows(rows)), warnings, dropped }
 }
 
 function dedupeRows(rows) {
@@ -282,58 +307,265 @@ function dedupeRows(rows) {
   return [...map.values()]
 }
 
+function looksLikeCodeNumber(n) {
+  if (!Number.isFinite(n) || n < 0 || n !== Math.trunc(n)) return false
+  const s = String(Math.trunc(n))
+  if (s.length === 6 && /^[0369]/.test(s)) return true
+  if (s.length === 5) return true
+  return false
+}
+
+function pickSharesAndCost(nums) {
+  const cleaned = (nums || []).filter((n) => Number.isFinite(n) && !looksLikeCodeNumber(n))
+  let shares = NaN
+  let cost = NaN
+  for (let i = 0; i < cleaned.length; i++) {
+    const n = cleaned[i]
+    const intish = n >= 1 && n < 1e8 && Math.abs(n - Math.round(n)) < 0.051
+    if (!intish) continue
+    shares = Math.round(n)
+    let k = i + 1
+    const next = cleaned[k]
+    if (next != null && Math.abs(next - n) < 0.051) k += 1
+    for (; k < cleaned.length; k++) {
+      const p = cleaned[k]
+      if (p > 0.05 && p < 20000) {
+        cost = p
+        break
+      }
+    }
+    break
+  }
+  if (!Number.isFinite(shares) && cleaned.length) {
+    const first = cleaned.find((n) => n >= 1 && n < 1e8)
+    if (first != null) shares = first
+  }
+  if (!Number.isFinite(cost)) {
+    const priceLike = cleaned.find((n) => n > 0.05 && n < 20000 && n !== shares)
+    if (priceLike != null) cost = priceLike
+  }
+  return { shares, cost }
+}
+
+let nameIndex = null
+function getNameIndex() {
+  if (nameIndex) return nameIndex
+  nameIndex = new Map()
+  for (const [code, name] of Object.entries(STOCK_NAMES)) {
+    const n = String(name || '').replace(/\s+/g, '')
+    if (!n) continue
+    if (!nameIndex.has(n)) nameIndex.set(n, code)
+    const stripped = n.replace(/^\*?ST/, '').replace(/^-U$/, '').replace(/-W$/, '').replace(/-S$/, '')
+    if (stripped && stripped !== n && !nameIndex.has(stripped)) nameIndex.set(stripped, code)
+  }
+  return nameIndex
+}
+
+function lookupCodeByName(name) {
+  const n = String(name || '').replace(/\s+/g, '').replace(/[^\u4e00-\u9fffA-Za-z0-9*]/g, '')
+  if (n.length < 2) return null
+  const idx = getNameIndex()
+  if (idx.has(n)) return idx.get(n)
+  if (n.length >= 3) {
+    for (const [key, code] of idx) {
+      if (key.includes(n) || n.includes(key)) return code
+    }
+  }
+  return null
+}
+
+const SKIP_NAME_TOKEN =
+  /^(证券|代码|名称|数量|成本|市值|盈亏|持仓|可用|最新|现价|股票|余额|比例|浮动|盈亏比|市值合计|合计|小计|资产|账号)$/
+
+function explodeMixedToken(token) {
+  const t = String(token || '').trim()
+  if (!t) return []
+  const parts = t.split(/(\d{5,6})/).filter(Boolean)
+  return parts.length > 1 ? parts : [t]
+}
+
+function isPlausibleTicker(via, rawToken) {
+  if (!via) return false
+  if (STOCK_NAMES[via.code]) return true
+  if (/[.\/%]/.test(String(rawToken))) return false
+  const rawDigits = String(rawToken).replace(/\D/g, '')
+  if (/^[0369]\d{5}$/.test(via.code) && rawDigits.length >= 5) return true
+  if (via.ex === 'HK' && /^\d{5}$/.test(via.code) && rawDigits.length >= 4) return true
+  return false
+}
+
+function extractOcrLineRows(text, dropped = []) {
+  const extra = []
+  splitLines(text).forEach((line) => {
+    if (/合计|小计|市值合计|资产账号/.test(line) && !/\d{5,6}/.test(line)) {
+      dropped.push({ preview: previewLine(line), reason: '合计 / 资产行，不是持仓' })
+      return
+    }
+    if (/证券代码|股票代码/.test(line) && /证券名称|股票名称/.test(line)) return
+    const tokens = line.trim().split(/\s+/).flatMap(explodeMixedToken).filter(Boolean)
+    if (!tokens.length) return
+
+    let norm = null
+    let name = ''
+    const leftover = []
+    tokens.forEach((t) => {
+      if (/[.\/%]/.test(t) && /\d/.test(t)) {
+        leftover.push(t)
+        return
+      }
+      const via = normalizeOcrStockCode(t)
+      if (!norm && isPlausibleTicker(via, t)) {
+        norm = via
+        return
+      }
+      if (!name && /[\u4e00-\u9fff]{2,}/.test(t) && !SKIP_NAME_TOKEN.test(t)) {
+        name = t.replace(/[^\u4e00-\u9fffA-Za-z0-9*]/g, '')
+        return
+      }
+      leftover.push(t)
+    })
+
+    if (!norm && name) {
+      const byName = lookupCodeByName(name)
+      if (byName) norm = normalizeStockCode(byName)
+    }
+    if (!norm) {
+      const glued = line.match(/(\d{5,6})/)
+      if (glued) {
+        const via = normalizeOcrStockCode(glued[1])
+        if (isPlausibleTicker(via, glued[1])) norm = via
+      }
+    }
+    if (!norm) {
+      if (line.trim().length >= 4) {
+        dropped.push({ preview: previewLine(line), reason: '这一行没有认出股票代码' })
+      }
+      return
+    }
+    if (!name) name = getStockName(norm.code)
+
+    const nums = []
+    leftover.forEach((p) => {
+      const n = parseNumberLoose(p)
+      if (Number.isFinite(n) && /[\d.]/.test(p)) nums.push(n)
+    })
+    const picked = pickSharesAndCost(nums)
+    extra.push({
+      code: norm.code,
+      ex: norm.ex,
+      name: name || getStockName(norm.code) || norm.code,
+      shares: Number.isFinite(picked.shares) ? picked.shares : 0,
+      cost: Number.isFinite(picked.cost) ? picked.cost : 0,
+      selected: true,
+      confidence: 'low',
+      source: 'ocr',
+    })
+  })
+  return extra
+}
+
+export function enrichImportRows(rows) {
+  return (rows || []).map((r) => {
+    let code = String(r.code || '').trim()
+    let ex = r.ex
+    let name = String(r.name || '').trim()
+    const repaired = normalizeOcrStockCode(code, ex)
+    if (repaired) {
+      code = repaired.code
+      ex = repaired.ex
+    }
+    const byName = lookupCodeByName(name)
+    if (byName && !STOCK_NAMES[code]) {
+      const n = normalizeStockCode(byName)
+      if (n) {
+        code = n.code
+        ex = n.ex
+      }
+    }
+    if (STOCK_NAMES[code] && (!name || name === code || name.length < 2)) {
+      name = STOCK_NAMES[code]
+    }
+    const known = !!STOCK_NAMES[code]
+    let confidence = r.confidence || 'low'
+    if (known && r.shares > 0 && r.cost > 0 && confidence === 'low') confidence = 'medium'
+    if (known && r.source !== 'ocr' && confidence === 'medium') confidence = r.confidence
+    return { ...r, code, ex: ex || r.ex, name: name || STOCK_NAMES[code] || code, confidence }
+  })
+}
+
+export function scoreImportRows(rows) {
+  return (rows || []).reduce((sum, r) => {
+    let s = 1
+    if (STOCK_NAMES[r.code]) s += 3
+    if (Number(r.shares) > 0) s += 1
+    if (Number(r.cost) > 0) s += 1
+    return sum + s
+  }, 0)
+}
+
+export function htmlTableToText(html) {
+  if (!html || typeof html !== 'string') return ''
+  if (typeof DOMParser === 'undefined') return ''
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    const table = doc.querySelector('table')
+    if (!table) return ''
+    return [...table.querySelectorAll('tr')]
+      .map((tr) =>
+        [...tr.children]
+          .map((td) => String(td.textContent || '').replace(/\s+/g, ' ').trim())
+          .join('\t'),
+      )
+      .filter((line) => line.trim())
+      .join('\n')
+  } catch {
+    return ''
+  }
+}
+
 /**
  * Parse OCR plain text (often space-messy) into candidate rows.
  */
 export function parseOcrText(text) {
-  const { rows, warnings } = parseHoldingsText(text, 'generic')
-  const marked = rows.map((r) => ({
-    ...r,
-    confidence: 'low',
-    source: 'ocr',
-  }))
-  if (!marked.length) {
-    // Line-by-line heuristic: CODE NAME SHARES COST
-    const extra = []
-    splitLines(text).forEach((line) => {
-      const parts = line.trim().split(/\s+/)
-      if (parts.length < 2) return
-      const norm = normalizeStockCode(parts[0])
-      if (!norm) return
-      let shares = NaN
-      let cost = NaN
-      let name = ''
-      const nums = []
-      parts.slice(1).forEach((p) => {
-        const n = parseNumberLoose(p)
-        if (Number.isFinite(n) && /[\d.]/.test(p)) nums.push(n)
-        else if (!name && /[\u4e00-\u9fffA-Za-z]/.test(p)) name = p
-      })
-      if (nums.length >= 1) shares = nums[0]
-      if (nums.length >= 2) cost = nums[nums.length - 1]
-      extra.push({
-        code: norm.code,
-        ex: norm.ex,
-        name: name || norm.code,
-        shares: Number.isFinite(shares) ? shares : 0,
-        cost: Number.isFinite(cost) ? cost : 0,
-        selected: true,
-        confidence: 'low',
-        source: 'ocr',
-      })
-    })
-    return { rows: dedupeRows(extra), warnings: warnings.concat(extra.length ? [] : ['OCR 未识别到持仓行']) }
+  const dropped = []
+  const lined = enrichImportRows(extractOcrLineRows(text, dropped))
+  if (lined.length) {
+    return { rows: dedupeRows(lined), warnings: [], dropped }
   }
-  return { rows: marked, warnings }
+  const parsed = parseHoldingsText(text, 'generic')
+  const marked = enrichImportRows(
+    parsed.rows.map((r) => ({
+      ...r,
+      confidence: 'low',
+      source: 'ocr',
+    })),
+  )
+  const allDropped = [...dropped, ...(parsed.dropped || [])]
+  if (!marked.length) {
+    return {
+      rows: [],
+      warnings: (parsed.warnings || []).concat(['OCR 未识别到持仓行']),
+      dropped: allDropped,
+    }
+  }
+  return { rows: dedupeRows(marked), warnings: parsed.warnings || [], dropped: allDropped }
 }
 
 /** Normalize rows coming from browser extension */
 export function normalizeExtensionRows(payload) {
   const list = Array.isArray(payload) ? payload : payload?.rows || []
   const rows = []
+  const dropped = []
   list.forEach((item) => {
-    const norm = normalizeStockCode(item.code || item.symbol, item.ex)
-    if (!norm) return
+    const raw = item.code || item.symbol
+    const norm = normalizeStockCode(raw, item.ex)
+    if (!norm) {
+      dropped.push({
+        preview: previewLine(String(raw || item.name || '')),
+        reason: '扩展行无法识别股票代码',
+      })
+      return
+    }
     rows.push({
       code: norm.code,
       ex: item.ex || norm.ex,
@@ -345,7 +577,11 @@ export function normalizeExtensionRows(payload) {
       source: 'extension',
     })
   })
-  return { rows: dedupeRows(rows), warnings: rows.length ? [] : ['扩展未返回有效持仓'] }
+  return {
+    rows: dedupeRows(rows),
+    warnings: rows.length ? [] : ['扩展未返回有效持仓'],
+    dropped,
+  }
 }
 
 export function rowsToCommit(rows) {
@@ -354,7 +590,7 @@ export function rowsToCommit(rows) {
     .map((r) => ({
       code: String(r.code).trim(),
       name: r.name || r.code,
-      ex: r.ex || 'SH',
+      ex: inferHoldingEx(r.code, r.ex),
       shares: Number(r.shares) || 0,
       cost: Number(r.cost) || 0,
     }))

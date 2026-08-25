@@ -32,13 +32,13 @@ import {
   essentialsDone,
 } from '@/services/profiling.js'
 import { vaultGet, vaultSet, getActiveAccountId } from '@/services/vault.js'
-import { getEntitlements } from '@/services/entitlements.js'
+import { getEntitlements, nextProductEdition } from '@/services/entitlements.js'
 import { readBilling, isProActive } from '@/services/billing.js'
 import { useBillingStore } from '@/store/billing'
 
 /**
  * Post-login landing: always prefer /app.
- * Honors a safe same-origin relative `redirect` query; never forces Settings or EditionPicker.
+ * Honors a safe same-origin relative `redirect` query; never forces Settings or a comparison picker.
  * Accepts values like `/app?edition=pro` (encoded or plain).
  */
 export function resolvePostAuthPath(redirect) {
@@ -403,8 +403,8 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * Align productEdition with billing entitlements (edition is a projection).
-   * Localhost: never force Pro over an explicit basic choice.
+   * Align productEdition with billing. Membership unlocks Pro; it never traps the user in Pro.
+   * Explicit basic (landing「进入基础版」、设置切换) must survive hydrate.
    */
   function syncEditionFromEntitlements(opts = {}) {
     const billing = useBillingStore()
@@ -413,26 +413,17 @@ export const useUserStore = defineStore('user', () => {
       profile.value,
     )
     const ed = profile.value?.productEdition
-    // Paid remote → force pro. Local free host alone must NOT override basic.
-    if (ent.isBillingPro && ed !== 'pro') {
-      if (ent.localFreePro && ed === 'basic') {
-        syncEditionStyle({ silent: true })
-        reconcileOnboardingForEdition()
-        return
+    const next = nextProductEdition({
+      currentEdition: ed,
+      isBillingPro: ent.isBillingPro,
+      localFreePro: ent.localFreePro,
+      activatePro: !!opts.activatePro,
+    })
+    if (next && next !== ed) {
+      setProductEdition(next, { silent: true })
+      if (!opts.silent && next === 'basic' && ed === 'pro') {
+        toast('Pro 已过期或未开通，已回落基础版')
       }
-      setProductEdition('pro', { silent: true })
-      reconcileOnboardingForEdition()
-      return
-    }
-    if (!ent.isBillingPro && ed === 'pro') {
-      // Local: keep Pro edition if owner chose it (capabilities follow edition)
-      if (ent.localFreePro) {
-        syncEditionStyle({ silent: true })
-        reconcileOnboardingForEdition()
-        return
-      }
-      setProductEdition('basic', { silent: true })
-      if (!opts.silent) toast('Pro 已过期或未开通，已回落基础版')
       reconcileOnboardingForEdition()
       return
     }

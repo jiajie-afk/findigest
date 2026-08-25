@@ -113,4 +113,17 @@ if (!/价值框架|安全边际|能力圈|折扣|逆向/.test(narrative)) {
 console.log('OK   value narrative plot')
 console.log('OK   catalyst deprioritized for value style')
 console.log(`narrative: ${narrative.slice(0, 140)}…`)
+
+const empty = await generateDailyReport({
+  holdings: [],
+  analyses: {},
+  financials: {},
+  userProfile,
+  aiConfig: { enabled: true, apiKey: 'should-not-call' },
+})
+if ((empty.items || []).length) throw new Error('empty holdings must not invent briefing items')
+if (!/持仓/.test(empty.headline || '')) throw new Error(`empty headline: ${empty.headline}`)
+if (empty.source !== 'local') throw new Error('empty holdings must stay local (no LLM)')
+console.log('OK   empty holdings briefing is honest')
+
 console.log('smoke_storytelling: all passed')

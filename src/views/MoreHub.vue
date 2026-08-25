@@ -5,12 +5,18 @@
         <h1 class="pt">我的</h1>
         <p class="pt-sub">
           {{ auth.email || user.nickname }} · {{ billing.statusLabel }} ·
-          {{ billing.canSeeProNav ? '专业台次要入口' : '次要能力都在这里' }}
+          {{
+            isEmptyHoldings
+              ? '先导入持仓。开通 Pro 等有股票以后再说。'
+              : billing.canSeeProNav
+                ? '专业台次要入口'
+                : '次要能力都在这里'
+          }}
         </p>
       </div>
     </header>
 
-    <section class="sys-switch" aria-label="系统切换">
+    <section v-if="!isEmptyHoldings || canEnterPro" class="sys-switch" aria-label="系统切换">
       <div class="sys-head">
         <h2 class="sys-title">系统切换</h2>
         <p class="sys-sub">
@@ -76,32 +82,41 @@ import { onNavClick } from '@/utils/navHref.js'
 import { useUserStore } from '@/store/user'
 import { useAuthStore } from '@/store/auth'
 import { useBillingStore } from '@/store/billing'
+import { usePortfolioStore } from '@/store/portfolio'
 
 const user = useUserStore()
 const auth = useAuthStore()
 const billing = useBillingStore()
+const portfolio = usePortfolioStore()
 const router = useRouter()
 billing.hydrate()
 
 const canEnterPro = computed(() => !!(billing.isBillingPro || billing.localFreePro))
+const isEmptyHoldings = computed(() => !(portfolio.allHoldings || []).length)
 
 const items = computed(() => {
   const essentialsOk =
     !!user.profile.essentialsDone || !!user.profile.onboardingDone
-  const base = [
-    {
-      to: '/settings',
-      title: '私人定制与偏好',
-      desc: billing.canUseProHud
-        ? user.profile.onboardingDone
-          ? '精密画像已齐 · 版本与提醒'
-          : '建议补全 88 题以校准 · 版本与提醒'
-        : essentialsOk
-          ? '基础版私人定制已完成（11 题）· 提醒与云同步'
-          : '先答完 11 题基础定制；提醒与云同步',
-    },
-  ]
-  if (!billing.canSeeProNav) {
+  const base = []
+  if (isEmptyHoldings.value) {
+    base.push({
+      to: '/portfolio?import=1',
+      title: '导入持仓',
+      desc: '先把股票放进来，今日和事件才有东西可看',
+    })
+  }
+  base.push({
+    to: '/settings',
+    title: '私人定制与偏好',
+    desc: billing.canUseProHud
+      ? user.profile.onboardingDone
+        ? '精密画像已齐 · 版本与提醒'
+        : '建议补全 88 题以校准 · 版本与提醒'
+      : essentialsOk
+        ? '基础版私人定制已完成（11 题）· 提醒与云同步'
+        : '先答完 11 题基础定制；提醒与云同步',
+  })
+  if (!billing.canSeeProNav && !isEmptyHoldings.value) {
     base.push({
       to: billing.localFreePro ? '/settings' : '/pricing',
       title: billing.localFreePro ? '切换 Pro 专业台' : '开通 Pro',
@@ -110,30 +125,34 @@ const items = computed(() => {
         : '专业台 + AI 增强；基础版仍免费',
     })
   }
-  base.push(
-    {
-      to: '/passport',
-      title: '画像说明书',
-      desc: '纠错覆盖、现金流层、你的约束摘要',
-    },
-    {
-      to: '/events',
-      title: '事件与催化剂',
-      desc: '只看与你持仓相关的，或手动添加',
-    },
-  )
-  if (!billing.canSeeProNav) {
+  if (!isEmptyHoldings.value) {
+    base.push(
+      {
+        to: '/passport',
+        title: '画像说明书',
+        desc: '纠错覆盖、现金流层、你的约束摘要',
+      },
+      {
+        to: '/events',
+        title: '事件与催化剂',
+        desc: '只看与你持仓相关的，或手动添加',
+      },
+    )
+  }
+  if (!billing.canSeeProNav && !isEmptyHoldings.value) {
     base.push({
       to: '/workspace',
-      title: '完整分析工作区',
+      title: '工作区',
       desc: '简报、行动、统计与持仓明细（进阶）',
     })
   }
-  base.push({
-    to: '/reports',
-    title: '历史报告',
-    desc: '已生成的每日简报存档',
-  })
+  if (!isEmptyHoldings.value) {
+    base.push({
+      to: '/reports',
+      title: '历史报告',
+      desc: '已生成的每日简报存档',
+    })
+  }
   return base
 })
 

@@ -1,8 +1,9 @@
 /**
- * Owner admin API — grant/revoke Pro, ban/unban, lookup usage.
+ * Owner ops API — accounts, entitlements, redeem codes, system health, audit.
  * Auth: header X-Admin-Secret or Authorization: Bearer <ADMIN_SECRET>
  *
  * Set ADMIN_SECRET on Vercel (and .env.local for Vite).
+ * Never returns vault holdings.
  */
 import { createHash, randomInt } from 'node:crypto'
 import { list } from '@vercel/blob'
@@ -19,6 +20,13 @@ import {
   safeEmailKey,
   upsertAccountMeta,
 } from '../lib/accountAdmin.js'
+import {
+  appendAudit,
+  computeKpis,
+  listCodeRecords,
+  readAudit,
+  systemHealth,
+} from '../lib/adminOps.js'
 
 export const config = { runtime: 'nodejs', maxDuration: 30 }
 
@@ -177,21 +185,45 @@ export default async function handler(req, res) {
   }
 
   const ip = getClientIp(req)
-  const rl = await checkRateLimitAsync(`admin:${ip}`, { limit: 60, windowMs: 15 * 60_000 })
+  const rl = await checkRateLimitAsync(`admin:${ip}`, { limit: 90, windowMs: 15 * 60_000 })
   if (!rl.ok) {
     return rateLimitResponse(res, rl.retryAfterSec, '操作过于频繁')
   }
 
+  async function note(action, extra = {}) {
+    try {
+      await appendAudit({ action, ip, ...extra })
+    } catch (e) {
+      console.warn('[admin audit]', e?.message || e)
+    }
+  }
+
   try {
     if (req.method === 'GET') {
+      const view = String(req.query.view || '').trim()
       const email = normalizeEmail(req.query.email || '')
       if (email) {
         const hit = await resolveAccount(email)
         if (!hit.ok) return res.status(404).json({ error: 'not_found', message: hit.message })
         return res.status(200).json(hit)
       }
+      if (view === 'health') {
+        return res.status(200).json({ health: systemHealth() })
+      }
+      if (view === 'codes') {
+        const codes = await listCodeRecords(listBlobs)
+        return res.status(200).json({ codes, total: codes.length })
+      }
+      if (view === 'audit') {
+        const events = await readAudit()
+        return res.status(200).json({ events })
+      }
       const listed = await listRegisteredAccounts()
-      return res.status(200).json(listed)
+      return res.status(200).json({
+        ...listed,
+        kpis: computeKpis(listed.accounts),
+        health: systemHealth(),
+      })
     }
 
     if (req.method === 'POST') {
@@ -210,13 +242,17 @@ export default async function handler(req, res) {
           createdAt: Date.now(),
           createdBy: 'admin',
           note: String(body.note || '').slice(0, 80),
+          last4: code.slice(-4),
         }
         await putPrivateJson(codePath(hashCode(code)), rec)
+        await note('issue_code', { detail: rec.days == null ? '永久' : `${rec.days}天` })
         return res.status(200).json({
           ok: true,
-          message: '兑换码已生成，请立刻复制发给用户（只显示一次）',
+          message: '兑换码已生成，请立刻复制发给用户（明文只显示一次）',
           code,
           days: rec.days,
+          last4: rec.last4,
+          note: rec.note,
         })
       }
 
@@ -254,7 +290,11 @@ export default async function handler(req, res) {
         }
         await putPrivateJson(entitlementPath(accountId), next)
         await upsertAccountMeta({ ...meta, lastSeenAt: now })
-        return res.status(200).json({ ok: true, message: '已开通 Pro', ent: next, meta })
+        await note('grant_pro', {
+          email,
+          detail: next.proUntil == null ? '永久' : `${days}天`,
+        })
+        return res.status(200).json({ ok: true, message: '已开通 Pro', ent: next, meta, email })
       }
 
       if (action === 'revoke_pro') {
@@ -267,7 +307,8 @@ export default async function handler(req, res) {
           email,
         }
         await putPrivateJson(entitlementPath(accountId), next)
-        return res.status(200).json({ ok: true, message: '已取消 Pro', ent: next, meta })
+        await note('revoke_pro', { email })
+        return res.status(200).json({ ok: true, message: '已取消 Pro', ent: next, meta, email })
       }
 
       if (action === 'ban') {
@@ -277,7 +318,8 @@ export default async function handler(req, res) {
           bannedAt: now,
           banReason: String(body.reason || '').slice(0, 200),
         })
-        return res.status(200).json({ ok: true, message: '已封禁', meta: nextMeta })
+        await note('ban', { email, detail: nextMeta.banReason || '' })
+        return res.status(200).json({ ok: true, message: '已封禁', meta: nextMeta, email })
       }
 
       if (action === 'unban') {
@@ -287,7 +329,8 @@ export default async function handler(req, res) {
           bannedAt: null,
           banReason: '',
         })
-        return res.status(200).json({ ok: true, message: '已解封', meta: nextMeta })
+        await note('unban', { email })
+        return res.status(200).json({ ok: true, message: '已解封', meta: nextMeta, email })
       }
 
       if (action === 'add_usage_test') {

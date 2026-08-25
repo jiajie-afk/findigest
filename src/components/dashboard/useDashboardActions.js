@@ -13,9 +13,9 @@ export function useDashboardActions() {
       if (!sa?.sent) {
         list.push({
           code: h.code,
-          title: `${h.name} 待采集`,
-          desc: '采集新闻与财务数据后生成信号',
-          action: '去采集',
+          title: `${h.name} 待刷新行情`,
+          desc: '刷新现价与新闻后，才能谈仓位含义',
+          action: '去刷新',
           pri: 3,
           tone: 'info',
         })
@@ -50,7 +50,7 @@ export function useDashboardActions() {
           code: h.code,
           title: `${h.name} 消息面偏强`,
           desc: `评分 +${s.total} · 建议仓位 ${pos?.pct ?? '—'}%`,
-          action: '考虑加仓',
+          action: '看仓位含义',
           pri: 1,
           tone: 'good',
         })
