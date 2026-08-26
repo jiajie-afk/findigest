@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+
+# Local desk runs and scratch — never part of a deploy
+scripts/.desk-run
+video-douyin-findigest
+video-douyin-findigest-remotion
+extension
+*.mp4
+.env*
+!.env.example
