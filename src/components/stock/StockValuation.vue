@@ -333,6 +333,7 @@ const dataSourceLabel = computed(() => {
   if (src === 'proxy') return 'proxy'
   if (src === 'jsonp-fallback') return 'jsonp-fallback'
   if (src === 'cache') return 'cache'
+  if (src === 'sina') return 'sina 备用源'
   return ''
 })
 
@@ -745,6 +746,10 @@ function shortLensVerdict(L) {
 }
 .source-cache {
   color: rgba(255, 255, 255, 0.55);
+}
+.source-sina {
+  color: #e6c35c;
+  background: rgba(230, 195, 92, 0.15);
 }
 .band-row {
   display: flex;

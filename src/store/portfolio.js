@@ -18,6 +18,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   const fetchProgress = ref({ done: 0, total: 0, current: '' })
   const fetchDebug = shallowRef({})
   const priceCache = shallowRef({})
+  let quietRefreshing = false
 
   const allHoldings = computed(() => {
     const list = []
@@ -249,6 +250,32 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  /**
+   * Quotes only, no news pass and no progress bar — so opening a page shows
+   * today's price instead of the bundled snapshot without the user pressing 刷新.
+   */
+  async function refreshQuotesQuiet() {
+    if (autoFetching.value || quietRefreshing) return { quotes: 0 }
+    const holdings = allHoldings.value
+    if (!holdings.length) return { quotes: 0 }
+    quietRefreshing = true
+    let quotes = 0
+    try {
+      const BATCH = 3
+      for (let i = 0; i < holdings.length; i += BATCH) {
+        const results = await Promise.allSettled(
+          holdings.slice(i, i + BATCH).map((h) => refreshHoldingQuote(h)),
+        )
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value) quotes += 1
+        })
+      }
+    } finally {
+      quietRefreshing = false
+    }
+    return { quotes }
+  }
+
   async function autoFetchAll() {
     if (autoFetching.value) return { skipped: true, reason: 'busy', quotes: 0, analyzed: 0 }
     const holdings = allHoldings.value
@@ -388,6 +415,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     nameOf,
     analyzeStock,
     autoFetchAll,
+    refreshQuotesQuiet,
     positionFor,
     valuationFor,
     revalueStock,

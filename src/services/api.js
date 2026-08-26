@@ -4,7 +4,7 @@ import { calculateValuation, resolveEarnings } from './valuation.js'
 import { getStockName } from '@/data/stock_names.js'
 import { peekFinancial, assessValuability } from '@/data/loader.js'
 import { allowJsonpFallback, proxyFetch, withDataMeta } from './apiClient.js'
-import { eastmoneySecid, scaleEastmoneyPrice } from './quotesRefresh.js'
+import { eastmoneySecid, parseSinaQuote, scaleEastmoneyPrice, sinaSymbol } from './quotesRefresh.js'
 
 const MAX_CONCURRENT = 3
 let activeCount = 0
@@ -227,19 +227,48 @@ export function fResearch(name, cb) {
     .catch(() => [])
 }
 
+/**
+ * Sina hq list — proxy-only fallback. East Money refuses some hosting egress IPs,
+ * and without this the app silently serves the bundled price snapshot forever.
+ */
+async function fetchQuoteSina(code, ex = 'SH') {
+  const symbol = sinaSymbol(code, ex)
+  if (!symbol) return null
+  const payload = await proxyFetch(`https://hq.sinajs.cn/list=${symbol}`, { timeoutMs: 8000 })
+  const parsed = parseSinaQuote(payload?.text, code, ex)
+  if (!parsed) return null
+  return {
+    price: parsed.price,
+    change_pct: parsed.change_pct,
+    name: '',
+    high: parsed.high,
+    low: parsed.low,
+    open: parsed.open,
+    asOf: parsed.asOf || new Date().toISOString(),
+    source: 'sina',
+  }
+}
+
 export async function fetchQuote(code, ex = 'SH') {
   const secid = eastmoneySecid(code, ex)
   if (!secid) return null
   const cb = `cb_q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
   const buildUrl = (cbName) =>
     `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f59,f152,f169,f170,f60,f168&cb=${cbName}`
-  const meta = await fetchPreferProxy(buildUrl, cb, 8000)
+  let meta = { data: null }
+  try {
+    meta = await fetchPreferProxy(buildUrl, cb, 8000)
+  } catch {
+    /* fall through to Sina */
+  }
   const d = metaData(meta)
-  if (!d?.data) return null
+  if (!d?.data) {
+    return fetchQuoteSina(code, ex).catch(() => null)
+  }
   const x = d.data
   const places = x.f59 ?? x.f152
   const price = scaleEastmoneyPrice(x.f43, places)
-  if (!(price > 0)) return null
+  if (!(price > 0)) return fetchQuoteSina(code, ex).catch(() => null)
   const change_pct = (x.f170 ?? 0) / 100
   const asOf = meta.asOf || new Date().toISOString()
   return {

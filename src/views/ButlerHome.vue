@@ -438,6 +438,7 @@ const hud = computed(() => {
 })
 
 onMounted(() => {
+  portfolio.refreshQuotesQuiet().catch(() => {})
   if (!events.cctvItems.length) events.loadCctvNews?.().catch(() => {})
   runRevisitPush(
     {

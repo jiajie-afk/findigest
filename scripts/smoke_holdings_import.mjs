@@ -5,7 +5,14 @@
 import { readFileSync } from 'node:fs'
 import { parseHoldingsText, parseOcrText, rowsToCommit } from '../src/services/holdingsImport.js'
 import { parseNumberLoose } from '../src/utils/stockCode.js'
-import { eastmoneySecid, inferHoldingEx, scaleEastmoneyPrice, summarizeFetchResult } from '../src/services/quotesRefresh.js'
+import {
+  eastmoneySecid,
+  inferHoldingEx,
+  parseSinaQuote,
+  scaleEastmoneyPrice,
+  sinaSymbol,
+  summarizeFetchResult,
+} from '../src/services/quotesRefresh.js'
 
 let failed = 0
 function assert(cond, msg) {
@@ -129,6 +136,31 @@ assert(inferHoldingEx('000858', 'SZ') === 'SZ', 'keep hinted SZ')
 assert(scaleEastmoneyPrice(150000, 2) === 1500, 'A-share 2dp')
 assert(scaleEastmoneyPrice(320500, 3) === 320.5, 'HK 3dp')
 assert(scaleEastmoneyPrice(150000) === 1500, 'default 2dp')
+assert(sinaSymbol('600519', 'SH') === 'sh600519', 'sina sh symbol')
+assert(sinaSymbol('000858', 'SZ') === 'sz000858', 'sina sz symbol')
+assert(sinaSymbol('700', 'HK') === 'hk00700', 'sina hk symbol pads')
+
+const sinaA = parseSinaQuote(
+  'var hq_str_sh600519="贵州茅台,1300.000,1304.000,1302.800,1314.450,1295.000,1302.770,1302.800,2173083,2838763999.000,100,1302.770,200,1302.600,2200,1302.550,100,1302.500,100,1302.370,50,1302.800,100,1302.810,53,1302.880,300,1302.900,1000,1302.910,2026-08-26,15:34:59,00";',
+  '600519',
+  'SH',
+)
+assert(sinaA?.price === 1302.8, `sina A price 1302.8, got ${sinaA?.price}`)
+assert(Math.abs(sinaA.change_pct + 0.092) < 0.01, `sina A change from prevClose, got ${sinaA.change_pct}`)
+assert(sinaA.asOf === '2026-08-26T07:34:59.000Z', `sina A asOf is Beijing-pinned, got ${sinaA.asOf}`)
+
+const sinaHk = parseSinaQuote(
+  'var hq_str_hk00700="TENCENT,腾讯控股,445.000,442.000,450.000,443.200,446.200,4.200,0.950,444.60001,444.60001,6175912157,13821542,0.000,0.000,675.134,411.000,2026/08/26,16:02";',
+  '00700',
+  'HK',
+)
+assert(sinaHk?.price === 446.2, `sina HK price 446.2, got ${sinaHk?.price}`)
+assert(sinaHk.change_pct === 0.95, `sina HK uses reported pct, got ${sinaHk.change_pct}`)
+assert(sinaHk.asOf === '2026-08-26T08:02:00.000Z', `sina HK asOf, got ${sinaHk.asOf}`)
+
+assert(parseSinaQuote('var hq_str_sh600519="";', '600519', 'SH') === null, 'sina empty payload → null')
+assert(parseSinaQuote('var hq_str_sz000001="x,1,2,3";', '600519', 'SH') === null, 'sina wrong symbol → null')
+
 assert(parseNumberLoose('1.2万') === 12000, 'parse 1.2万 shares')
 assert(parseNumberLoose('1,400.00') === 1400, 'parse comma cost')
 assert(parseNumberLoose('0.35亿') === 35000000, 'parse 0.35亿')

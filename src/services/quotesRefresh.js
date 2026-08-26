@@ -35,3 +35,68 @@ export function scaleEastmoneyPrice(raw, decimalPlaces) {
   const places = Number.isFinite(d) && d >= 0 && d <= 4 ? d : 2
   return n / 10 ** places
 }
+
+/** Sina hq list symbol (fallback source when East Money refuses our egress). */
+export function sinaSymbol(code, ex = 'SH') {
+  const digits = String(code || '').replace(/\D/g, '')
+  if (!digits) return ''
+  const market = inferHoldingEx(digits, ex)
+  if (market === 'HK') return `hk${digits.padStart(5, '0')}`
+  return `${market.toLowerCase()}${digits.padStart(6, '0')}`
+}
+
+function num(v) {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+/** Sina reports Beijing time without an offset; pin it so asOf is not read as UTC. */
+function beijingIso(date, time) {
+  const d = String(date || '').replace(/\//g, '-').trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null
+  const t = String(time || '').trim()
+  const hms = /^\d{2}:\d{2}:\d{2}$/.test(t) ? t : /^\d{2}:\d{2}$/.test(t) ? `${t}:00` : '00:00:00'
+  const parsed = new Date(`${d}T${hms}+08:00`)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+}
+
+/**
+ * Parse one `var hq_str_xxx="..."` record.
+ * A-share: name,open,prevClose,price,high,low,... ,date,time
+ * HK: nameEn,nameCn,open,prevClose,high,low,price,change,changePct,... ,date,time
+ * @returns {{price:number,change_pct:number,high:number,low:number,open:number,asOf:string|null}|null}
+ */
+export function parseSinaQuote(text, code, ex = 'SH') {
+  const symbol = sinaSymbol(code, ex)
+  if (!symbol) return null
+  const raw = String(text || '')
+  const matched = raw.match(new RegExp(`hq_str_${symbol}="([^"]*)"`))
+  if (!matched) return null
+  const f = matched[1].split(',')
+  if (f.length < 10) return null
+
+  if (symbol.startsWith('hk')) {
+    const price = num(f[6])
+    if (!(price > 0)) return null
+    return {
+      price,
+      change_pct: num(f[8]),
+      high: num(f[4]),
+      low: num(f[5]),
+      open: num(f[2]),
+      asOf: beijingIso(f[17], f[18]),
+    }
+  }
+
+  const price = num(f[3])
+  const prevClose = num(f[2])
+  if (!(price > 0)) return null
+  return {
+    price,
+    change_pct: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0,
+    high: num(f[4]),
+    low: num(f[5]),
+    open: num(f[1]),
+    asOf: beijingIso(f[30], f[31]),
+  }
+}

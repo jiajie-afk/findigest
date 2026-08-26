@@ -103,6 +103,7 @@ const financialMap = computed(() => portfolio.financialData || {})
 const isEmptyHoldings = computed(() => !(portfolio.allHoldings || []).length)
 
 onMounted(async () => {
+  await portfolio.refreshQuotesQuiet().catch(() => {})
   await user.recalibrate()
   await user.runVerification((code) => portfolio.getPrice(code, null))
 })
