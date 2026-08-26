@@ -1,12 +1,30 @@
-# FinDigest
+# FinDigest · 私人研究台
 
-**私人研究台，不是荐股机。**
+**A 股 / 港股价值投资研究台。只分析你的持仓，不荐股、不报买卖点。**
 
-[Live](https://findigest.cn) · Vue 3 · 持仓简报 · 硬约束优先 · 止于仓位含义
+[![Live](https://img.shields.io/badge/live-findigest.cn-6ee0c8)](https://findigest.cn)
+[![CI](https://github.com/jiajie-afk/findigest/actions/workflows/ci.yml/badge.svg)](https://github.com/jiajie-afk/findigest/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-FinDigest 把东财/雪球噪音压成每天该看的几件事。分析宇宙是**你的持仓**，不是全市场扫描。本地引擎负责排序与安全边际；模型只用人话重写，不下单、不报买卖点。
+![FinDigest](public/og.png)
+
+把东财、雪球的噪音压成每天该看的几件事。分析宇宙是**你的持仓**，不是全市场扫描。本地引擎负责估值、安全边际与排序；模型只用人话重写，不下单、不报买卖点。
 
 > 内容仅供信息参考，不构成投资建议。
+
+## 它到底输出什么
+
+以贵州茅台为例——引擎给的不是「买」或「卖」，是一份能逐条复核的结论（示例快照，价格随行情变动）：
+
+| 项目 | 输出 |
+|---|---|
+| 生意质量 | `wonderful`（高毛利、高 ROE、品牌定价权） |
+| 保守内在价值 | ≈ ¥1338 |
+| 巴菲特安全边际门槛 | 25%（高确定性档） |
+| 现价折价 | 2.6% → **好生意，但价格没给够折扣** |
+| 三表勾稽 | 通过，有残差：经营现金流/净利润 −68.8%（白酒渠道压货常见，标注但不判造假） |
+
+结论止于**仓位含义**：加 / 减 / 观察 / 硬约束否决。不给目标价，不给进场点。
 
 ## 我们拒绝什么
 
