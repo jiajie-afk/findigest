@@ -6,8 +6,8 @@
  *   Keep false when using admin console to grant after payment.
  */
 
-/** Temporary: Pro free on live site. Prefer admin grant (semi-auto) when false. */
-export const PRO_FREE_LAUNCH = false
+/** Everyone enters Pro desk; login is optional. No paywall to start. */
+export const PRO_FREE_LAUNCH = true
 
 export function isTrueLocalhost() {
   if (typeof window === 'undefined' || !window.location) return false
@@ -22,7 +22,7 @@ export function isLocalFreeProHost() {
 
 /** Short status / price copy for free-Pro mode. */
 export function freeProStatusLabel() {
-  if (PRO_FREE_LAUNCH) return '限时免费'
+  if (PRO_FREE_LAUNCH) return '可直接进入'
   if (isTrueLocalhost()) return '本地免费'
   return '免费'
 }

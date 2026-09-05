@@ -3,29 +3,24 @@
     <header class="ld-top">
       <a class="ld-mark" href="#top">FinDigest</a>
       <nav class="ld-nav" aria-label="落地导航">
-        <a href="#editions">版本对比</a>
-        <a href="#paths">路径</a>
+        <a href="#editions">版本</a>
+        <a href="#paths">方法</a>
         <a href="#caps">能力</a>
         <a href="#frame">工作台</a>
       </nav>
     </header>
 
-    <div class="ld-ticker">
-      <template v-for="(t, i) in ticks" :key="t.id">
-        <span v-if="i" class="ld-tick-d" aria-hidden="true">◆</span>
-        <a class="ld-tick-btn" :href="'#story-' + t.id">{{ t.label }}</a>
-      </template>
-      <span class="ld-tick-d" aria-hidden="true">◆</span>
-      <span>私人定制</span>
-    </div>
-
-    <LandingHero :enter-href="enterHref" />
-    <LandingEditions :product-stats="productStats" :enter-href="enterHref" />
-    <LandingProdesk />
+    <LandingHero :enter-href="enterHref" :login-href="loginHref" />
+    <LandingEditions :enter-href="enterHref" :basic-href="basicHref" />
     <LandingPaths />
     <LandingCaps :cap-cards="capCards" />
-    <LandingFrame :modules-basic="modulesBasic" :modules-pro="modulesPro" :enter-href="enterHref" />
-    <LandingClose :enter-href="enterHref" />
+    <LandingFrame
+      :modules-basic="modulesBasic"
+      :modules-pro="modulesPro"
+      :enter-href="enterHref"
+      :basic-href="basicHref"
+    />
+    <LandingClose :enter-href="enterHref" :login-href="loginHref" />
 
     <footer class="ld-foot">
       <span>© {{ year }} FinDigest</span>
@@ -38,10 +33,9 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { PRODUCT_STATS, COPY } from '@/data/productStats.js'
+import { COPY } from '@/data/productStats.js'
 import LandingHero from '@/components/landing/LandingHero.vue'
 import LandingEditions from '@/components/landing/LandingEditions.vue'
-import LandingProdesk from '@/components/landing/LandingProdesk.vue'
 import LandingPaths from '@/components/landing/LandingPaths.vue'
 import LandingCaps from '@/components/landing/LandingCaps.vue'
 import LandingFrame from '@/components/landing/LandingFrame.vue'
@@ -50,33 +44,12 @@ import LandingStory from '@/components/landing/LandingStory.vue'
 import '@/assets/styles/landing.css'
 
 const year = new Date().getFullYear()
-const productStats = PRODUCT_STATS
-const ticks = [
-  { id: 'briefing', label: '今日简报' },
-  { id: 'value', label: '价值投资' },
-  { id: 'swing', label: '短线催化' },
-  { id: 'valuation', label: '保守估值' },
-  { id: 'management', label: '管理层洞察' },
-]
 
 const storyId = ref(null)
 
-const enterTo = computed(() => {
-  try {
-    const s = JSON.parse(localStorage.getItem('fd_session_v1') || 'null')
-    if (s?.accountId) return { path: '/app', query: { edition: 'basic' } }
-  } catch {
-    /* ignore */
-  }
-  return { path: '/auth', query: { redirect: '/app?edition=basic' } }
-})
-
-const enterHref = computed(() => {
-  const to = enterTo.value
-  if (typeof to === 'string') return to
-  const q = new URLSearchParams(to.query || {}).toString()
-  return q ? `${to.path}?${q}` : to.path
-})
+const enterHref = '/app?edition=pro'
+const basicHref = '/app?edition=basic'
+const loginHref = '/auth?redirect=' + encodeURIComponent('/app?edition=pro')
 
 const modulesBasic = [
   { k: '01', name: '今日', desc: '一屏说清今天该看什么' },
@@ -107,22 +80,22 @@ const stories = {
   swing: {
     id: 'swing',
     demo: 'swing',
-    kicker: '路径乙 · 短线交易',
-    hook: '催化剂窗口一关，机会就死。AI 替你盯着到期日。',
-    title: '快变量进今日，过期即淡出',
-    lead: '短线拼的是时间窗与纪律，不是多看十条研报。AI 帮你盯事件、控仓位建议权重，并把「过期催化」从今日里清掉。',
+    kicker: '能力 · 事件日历',
+    hook: '催化会过期。过期的，不进今日。',
+    title: '事件进简报，窗口一关就淡出',
+    lead: '这不是第二条产品。公告、业绩窗、解禁节点只有在过得了你的硬约束时，才出现在今日——关上就降权，避免事后叙事。',
     helps: [
-      { t: '事件雷达', d: '扫描与持仓相关的公告、业绩窗、解禁与政策节点，标出可行动窗口。' },
-      { t: '倒计时淡出', d: '窗口关闭或催化失效后，自动从今日焦点降权，避免事后叙事。' },
-      { t: '纪律护栏', d: '按你的止盈、回撤与仓位上限过滤冲动建议——快，但不失控。' },
-      { t: '来源可点开', d: '每条催化带来源链接，方便你二次核验，而不是盲信摘要。' },
-      { t: '反馈闭环', d: '你标记的有效/无效交易信号，会调整下次短线排序权重。' },
+      { t: '持仓相关才进', d: '扫描与持仓相关的公告、业绩窗、解禁与政策节点，标出仍有效的窗口。' },
+      { t: '倒计时淡出', d: '窗口关闭或催化失效后，从今日焦点降权，避免事后叙事。' },
+      { t: '纪律护栏', d: '仍过你的回撤、单票上限与禁买行业；事件热度不能盖过安全边际。' },
+      { t: '来源可点开', d: '每条带来源链接，方便二次核验，而不是盲信摘要。' },
+      { t: '反馈闭环', d: '你标记的有效 / 无效，会调整下次事件排序，而不是另开一套短线台。' },
     ],
   },
   value: {
     id: 'value',
     demo: 'value',
-    kicker: '路径甲 · 价值投资',
+    kicker: '方法 · 价值投资',
     hook: '叙事再热闹，也不进今日——除非安全边际先亮灯。',
     title: '慢变量优先，拒绝叙事型加仓',
     lead: '价值路径把护城河、管理层与安全边际当作门禁。热度再高，过不了硬约束就不进你的决策台。',
@@ -174,16 +147,16 @@ const capCards = [
   {
     id: 'swing',
     num: '02',
-    title: '短线交易',
-    hook: '催化剂窗口一关，机会就死。',
-    teaser: 'CATALYST 计时、倒计时淡出、纪律护栏。',
+    title: '事件日历',
+    hook: '催化会过期。过期的，不进今日。',
+    teaser: '持仓相关窗口进简报，关上就淡出。',
   },
   {
     id: 'valuation',
     num: '03',
     title: '保守估值',
     hook: '先回答它是什么企业，再谈贵不贵。',
-    teaser: `${COPY.paradigmHonest}，再用保守口径估价格。`,
+    teaser: '先识企业，再用保守口径估价格。',
   },
   {
     id: 'management',

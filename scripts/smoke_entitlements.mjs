@@ -19,18 +19,19 @@ const expired = { plan: 'pro', proUntil: Date.now() - 60_000 }
 const active = { plan: 'pro', proUntil: Date.now() + 86400000 }
 const lifetime = { plan: 'pro', proUntil: null }
 
-const skinPro = getEntitlements(free, { productEdition: 'pro' })
-assert(!skinPro.isBillingPro, 'skin-only pro: isBillingPro false')
-assert(!skinPro.canSeeProNav, 'skin-only pro: canSeeProNav false')
-assert(!skinPro.canUseProHud, 'skin-only pro: canUseProHud false')
-assert(!skinPro.canUseLlm, 'skin-only pro: canUseLlm false')
-assert(!skinPro.canUseProdeskStyle, 'skin-only pro: canUseProdeskStyle false')
-assert(skinPro.editionProjected === 'basic', 'skin-only pro: editionProjected basic')
+const freePro = getEntitlements(free, { productEdition: 'pro' })
+assert(!freePro.isBillingPro, 'free + pro: isBillingPro false')
+assert(freePro.localFreePro && freePro.canChoosePro, 'free launch: can choose Pro')
+assert(
+  freePro.canSeeProNav && freePro.canUseProHud && freePro.canUseLlm && freePro.canUseProdeskStyle,
+  'free + pro: Pro shell on',
+)
+assert(freePro.editionProjected === 'pro', 'free + pro: editionProjected pro')
 
 const expiredEnt = getEntitlements(expired, { productEdition: 'pro' })
 assert(
-  !expiredEnt.canSeeProNav && !expiredEnt.canUseProHud && !expiredEnt.canUseLlm,
-  'expired: all pro flags false',
+  expiredEnt.canSeeProNav && expiredEnt.canUseProHud && expiredEnt.canUseLlm,
+  'expired + free launch: Pro shell still on',
 )
 
 const paidBasic = getEntitlements(active, { productEdition: 'basic' })
@@ -64,6 +65,7 @@ assert(lifePro.isBillingPro && lifePro.canSeeProNav, 'lifetime + pro: flags true
 
 const skinBasic = getEntitlements(free, { productEdition: 'basic' })
 assert(!skinBasic.isBillingPro && skinBasic.editionProjected === 'basic', 'free+basic stays basic')
+assert(skinBasic.canChoosePro, 'free launch: basic can still switch to Pro')
 
 // Landing「进入基础版」and Settings switch must not be snapped back to Pro.
 assert(

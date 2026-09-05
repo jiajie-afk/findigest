@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getSession } from '@/services/vault.js'
+import { getSession, ensureLocalGuestSession, isGuestSession } from '@/services/vault.js'
 import { resolvePostAuthPath } from '@/store/user.js'
 
 const routes = [
@@ -7,7 +7,7 @@ const routes = [
     path: '/',
     name: 'landing',
     component: () => import('@/views/Landing.vue'),
-    meta: { title: '私人研究台', hideNav: true, public: true },
+    meta: { title: '价值投资的研究台', hideNav: true, public: true },
   },
   {
     path: '/auth',
@@ -17,7 +17,7 @@ const routes = [
   },
   {
     path: '/onboarding/edition',
-    redirect: '/app',
+    redirect: '/app?edition=pro',
   },
   {
     path: '/app',
@@ -33,9 +33,7 @@ const routes = [
   },
   {
     path: '/pricing',
-    name: 'pricing',
-    component: () => import('@/views/Pricing.vue'),
-    meta: { title: '开通 Pro', hideNav: true, public: true },
+    redirect: '/app?edition=pro',
   },
   {
     path: '/workspace',
@@ -71,15 +69,11 @@ const routes = [
   },
   {
     path: '/preview/prodesk',
-    name: 'preview-prodesk',
-    component: () => import('@/views/PreviewProDesk.vue'),
-    meta: { title: 'Pro Desk 预览', public: true },
+    redirect: '/app?edition=pro',
   },
   {
     path: '/preview/basic',
-    name: 'preview-basic',
-    component: () => import('@/views/PreviewBasicDesk.vue'),
-    meta: { title: '基础版预览', public: true },
+    redirect: '/app?edition=pro',
   },
 ]
 
@@ -90,11 +84,13 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const loggedIn = !!getSession()?.accountId
-  if (to.meta.requiresAuth && !loggedIn) {
-    return { path: '/auth', query: { redirect: to.fullPath } }
+  let session = getSession()
+  if (to.meta.requiresAuth && !session?.accountId) {
+    session = ensureLocalGuestSession()
   }
-  if (to.name === 'auth' && loggedIn) {
+  const loggedIn = !!session?.accountId
+  const guest = isGuestSession(session)
+  if (to.name === 'auth' && loggedIn && !guest) {
     return { path: resolvePostAuthPath(to.query.redirect) }
   }
   return true
@@ -103,7 +99,7 @@ router.beforeEach((to) => {
 router.afterEach((to) => {
   document.title =
     to.name === 'landing'
-      ? 'FinDigest · 私人研究台'
+      ? 'FinDigest · 价值投资的研究台'
       : to.meta.title
         ? `${to.meta.title} · FinDigest`
         : 'FinDigest'

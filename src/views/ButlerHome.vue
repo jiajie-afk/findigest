@@ -3,7 +3,7 @@
     <header class="bh-mast">
       <p class="bh-brand">FinDigest</p>
       <p class="bh-date">
-        {{ dateLabel }} · {{ billing.canUseProHud ? 'Pro Desk' : '今天该看什么' }}
+        {{ dateLabel }} · {{ billing.canUseProHud ? '专业台' : '今天该看什么' }}
       </p>
     </header>
 
@@ -16,7 +16,7 @@
         <button class="btn bp" type="button" @click="openImport('paste')">导入持仓</button>
         <button class="btn bs" type="button" @click="openImport('manual')">手动录入</button>
       </div>
-      <p class="bh-empty-note">可手动填一只，或粘贴券商表格、上传 CSV、拍持仓截图。开通 Pro、答画像都等有股票以后再说。</p>
+      <p class="bh-empty-note">可手动填一只，或粘贴券商表格、上传 CSV、拍持仓截图。登录不是必须的。</p>
     </section>
 
     <template v-if="!isEmptyHoldings">
@@ -67,18 +67,11 @@
       </div>
       <template v-else>
         <h1 class="bh-h1">
-          <template v-if="!canGenerateUseful">先答几道核心题，<em>再谈今天</em></template>
-          <template v-else-if="headline">{{ headlineLead }}</template>
+          <template v-if="headline">{{ headlineLead }}</template>
           <template v-else>今天只留<em>你该看的</em></template>
         </h1>
         <p class="bh-lead">
-          <template v-if="!canGenerateUseful">
-            身份章 {{ essentialProgress }}/{{ essentialTotal }} 答完就能出简报<template v-if="billing.canUseProHud">。88 题不急，有空再补</template>。
-          </template>
-          <template v-else-if="billing.canUseProHud && !user.profile.onboardingDone">
-            核心题够用了（{{ user.profile.scenarioProgress || 0 }}/88）。可以先出简报，画像慢慢填。
-          </template>
-          <template v-else-if="headline">{{ headlineRest }}</template>
+          <template v-if="headline">{{ headlineRest }}</template>
           <template v-else>
             按你的硬约束裁一版简报。话少一点，重点清楚一点。
           </template>
@@ -91,14 +84,7 @@
       </div>
 
       <div class="bh-actions">
-        <a
-          v-if="!canGenerateUseful"
-          class="btn bp"
-          href="/settings?focus=essentials#profile-scenario"
-          @click="onNavClick($event, '/settings?focus=essentials#profile-scenario', router)"
-        >答核心 {{ essentialTotal }} 题</a>
         <button
-          v-else
           class="btn bp"
           type="button"
           :disabled="genLoading"
@@ -107,7 +93,7 @@
           {{ genLoading && !wantLlm ? '生成中…' : latestBriefing ? '刷新今日简报' : '生成今日简报' }}
         </button>
         <button
-          v-if="canGenerateUseful && canTryLlm"
+          v-if="canTryLlm"
           class="btn bs"
           type="button"
           :disabled="genLoading"
@@ -116,12 +102,12 @@
           {{ genLoading && wantLlm ? '重写中…' : '用人话重写' }}
         </button>
         <a
-          v-if="billing.canUseProHud && !user.profile.onboardingDone"
+          v-if="!user.profile.onboardingDone"
           class="bh-more-link"
-          :href="canGenerateUseful ? '/settings?focus=full#profile-scenario' : '/settings?focus=essentials#profile-scenario'"
-          @click="onNavClick($event, canGenerateUseful ? '/settings?focus=full#profile-scenario' : '/settings?focus=essentials#profile-scenario', router)"
+          href="/settings#profile-scenario"
+          @click="onNavClick($event, '/settings#profile-scenario', router)"
         >
-          继续填画像
+          校准画像（可选）
         </a>
         <a
           v-if="!billing.canSeeProNav"
@@ -163,6 +149,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >原文</a>
+              <NewsAiBrief :item="e" variant="butler" />
             </div>
           </div>
         </li>
@@ -175,7 +162,7 @@
       <h2 class="bh-sec">「用人话重写」需要 Pro</h2>
       <p class="bh-pay-lead">本地简报一直免费。开 Pro 后，模型会按你的硬约束把今天的话重说一遍。</p>
       <div class="bh-actions">
-        <a class="btn bp" href="/pricing" @click="onNavClick($event, '/pricing', router)">开通 Pro</a>
+        <a class="btn bp" href="/app?edition=pro" @click="onNavClick($event, '/app?edition=pro', router)">免费进入 Pro</a>
         <button class="btn bs" type="button" @click="showPaywall = false">先用本地版</button>
       </div>
     </section>
@@ -281,13 +268,13 @@ import {
 } from '@/services/briefingArchive.js'
 import { loadFeedbackMemory, recordAdviceFeedback, extractConstraints } from '@/services/constraints.js'
 import { needsRevisitHint, runRevisitPush } from '@/services/remind.js'
-import { ESSENTIAL_QUESTION_COUNT, essentialsDone } from '@/services/profiling.js'
 import {
   suggestPositionDelta,
   stashPositionSuggestion,
 } from '@/services/decisionBridge.js'
 import BriefingFeedbackButtons from '@/components/common/BriefingFeedbackButtons.vue'
 import ImportHoldingsWizard from '@/components/portfolio/ImportHoldingsWizard.vue'
+import NewsAiBrief from '@/components/events/NewsAiBrief.vue'
 
 const user = useUserStore()
 const portfolio = usePortfolioStore()
@@ -333,20 +320,6 @@ billing.hydrate()
 
 const dateLabel = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
-)
-
-const essentialTotal = ESSENTIAL_QUESTION_COUNT
-const essentialProgress = computed(() => {
-  const a = user.profile.scenarioAnswers || {}
-  return Object.keys(a).filter((id) => id.startsWith('s1q') && a[id]).length
-})
-
-const canGenerateUseful = computed(
-  () =>
-    !!user.profile.onboardingDone ||
-    !!user.profile.essentialsDone ||
-    essentialsDone(user.profile.scenarioAnswers || {}) ||
-    (user.profile.scenarioProgress || 0) >= 10,
 )
 
 const canTryLlm = computed(() => user.aiConfig?.enabled && !!user.aiConfig?.apiKey)

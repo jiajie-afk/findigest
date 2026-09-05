@@ -3,7 +3,12 @@
  * Usage: node scripts/smoke_holdings_import.mjs
  */
 import { readFileSync } from 'node:fs'
-import { parseHoldingsText, parseOcrText, rowsToCommit } from '../src/services/holdingsImport.js'
+import {
+  parseHoldingsText,
+  parseOcrText,
+  extractHoldingsByNameAndCode,
+  rowsToCommit,
+} from '../src/services/holdingsImport.js'
 import { parseNumberLoose } from '../src/utils/stockCode.js'
 import {
   eastmoneySecid,
@@ -108,6 +113,22 @@ assert(
 const ocrMiss = parseOcrText('今日大盘红了 不要追高\n合计 资产 888\n')
 assert(ocrMiss.rows.length === 0, 'ocr miss: no fake rows')
 assert(ocrMiss.dropped.length >= 1, 'ocr miss: dropped lines listed')
+
+const nameOnly = extractHoldingsByNameAndCode('持仓里有贵州茅台和五粮液')
+assert(
+  nameOnly.rows.some((r) => r.code === '600519') && nameOnly.rows.some((r) => r.code === '000858'),
+  'dict scan: name-only 茅台 + 五粮液',
+)
+
+const messyBlob = extractHoldingsByNameAndCode(
+  '证券代码600519证券名称贵州茅台股票余额100成本价1400.00证券代码000858证券名称五粮液股票余额200成本价150.50',
+)
+const blobMaotai = messyBlob.rows.find((r) => r.code === '600519')
+const blobWly = messyBlob.rows.find((r) => r.code === '000858')
+assert(!!blobMaotai && !!blobWly, 'dict scan: glued OCR blob found both')
+assert(blobMaotai && blobMaotai.shares === 100 && blobMaotai.cost === 1400, 'dict scan: 茅台 shares/cost')
+assert(blobWly && blobWly.shares === 200 && blobWly.cost === 150.5, 'dict scan: 五粮液 shares/cost')
+assert(blobMaotai && blobMaotai.confidence === 'high', 'dict scan: name+code pair is high')
 
 const vercel = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
 const csp = vercel.headers

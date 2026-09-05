@@ -175,6 +175,10 @@
         </template>
       </p>
       <p v-if="mode === 'register'" class="auth-note">若以前注册没写进云端，再注册一次即可。</p>
+      <p class="auth-note">
+        登录不是必须的。
+        <a href="/app?edition=pro" @click="onNavClick($event, '/app?edition=pro')">免费进入 Pro</a>
+      </p>
     </div>
   </div>
 </template>
@@ -367,9 +371,7 @@ async function submit() {
     await billing.hydrate()
     user.syncEditionFromEntitlements({ silent: true })
     const ed = editionFromRedirect(route.query.redirect)
-    if (ed === 'basic' || ed === 'pro') {
-      user.setProductEdition(ed, { silent: true })
-    }
+    user.setProductEdition(ed === 'basic' ? 'basic' : 'pro', { silent: true })
     if (auth.lastError && (mode.value === 'register' || mode.value === 'login')) {
       user.toast(auth.lastError)
     }

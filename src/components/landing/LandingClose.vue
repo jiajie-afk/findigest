@@ -2,11 +2,10 @@
   <section class="ld-close">
     <div class="ld-sec-inner ld-close-inner">
       <p class="ld-brand-foot">FinDigest</p>
-      <p class="ld-hook ld-hook-close">从今天起，让噪音退场。</p>
-      <h2 class="ld-h2 ld-h2-close">选你的台面</h2>
+      <h2 class="ld-h2 ld-h2-close">打开研究台</h2>
       <div class="ld-close-ctas">
-        <a class="ld-cta" :href="enterHref" @click="onNavClick($event, enterHref)">进入基础版</a>
-        <a class="ld-cta ld-cta-pro" href="/pricing" @click="onNavClick($event, '/pricing')">{{ proCta }}</a>
+        <a class="ld-cta" :href="enterHref" @click="onNavClick($event, enterHref)">{{ COPY.heroCta }}</a>
+        <a class="ld-cta ld-cta-pro" :href="loginHref" @click="onNavClick($event, loginHref)">登录（可选）</a>
       </div>
 
       <div class="ld-refusals" aria-label="我们拒绝什么">
@@ -23,13 +22,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { isLocalFreeProHost } from '@/services/localOwner.js'
+import { COPY } from '@/data/productStats.js'
 import { onNavClick } from '@/utils/navHref.js'
 
 defineProps({
   enterHref: { type: String, required: true },
+  loginHref: { type: String, required: true },
 })
-
-const proCta = computed(() => (isLocalFreeProHost() ? '免费进 Pro' : '开通 Pro'))
 </script>

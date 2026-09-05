@@ -6,15 +6,8 @@
     </div>
     <div class="section-body">
       <div v-if="!user.profile.onboardingDone" class="empty">
-        <template v-if="billing.canUseProHud">
-          私人定制未完成（{{ user.profile.scenarioProgress || 0 }}/88）。答完细分题后，管家才能按你的约束给建议。
-        </template>
-        <template v-else>
-          基础定制未完成。答完 11 题身份章后即可生成观察简报。
-        </template>
-        <router-link :to="billing.canUseProHud ? '/settings' : '/settings?focus=essentials#profile-scenario'">
-          去完善画像 →
-        </router-link>
+        画像未填。今日简报仍可生成；校准后这里会出现性格标签。
+        <router-link to="/settings#profile-scenario">去校准（可选） →</router-link>
       </div>
       <template v-else>
         <div class="tags">
@@ -55,26 +48,13 @@
 <script setup>
 import { computed } from 'vue'
 import { useUserStore } from '@/store/user'
-import { useBillingStore } from '@/store/billing'
-import { ESSENTIAL_QUESTION_COUNT, ESSENTIAL_QUESTION_IDS } from '@/services/profiling.js'
 
 const user = useUserStore()
-const billing = useBillingStore()
 const isJournal = computed(() => user.designStyle === 'journal')
 const tags = computed(() => (user.personality || []).slice(0, 4))
-const essentialAnswered = computed(() => {
-  const a = user.profile.scenarioAnswers || {}
-  return ESSENTIAL_QUESTION_IDS.filter((id) => !!a[id]).length
-})
 const confidenceLabel = computed(() => {
-  if (billing.canUseProHud) {
-    return user.profile.onboardingDone
-      ? `私人定制 ${user.profile.scenarioProgress || 88}/88`
-      : '待完成 88 题定制'
-  }
-  return user.profile.onboardingDone
-    ? `基础定制 ${ESSENTIAL_QUESTION_COUNT}/${ESSENTIAL_QUESTION_COUNT}`
-    : `待完成基础定制 ${essentialAnswered.value}/${ESSENTIAL_QUESTION_COUNT}`
+  if (user.profile.onboardingDone) return '画像已校准'
+  return '画像未填 · 简报用保守默认'
 })
 const riskPct = computed(() => `${Math.round((user.riskCalibration.actual ?? 0.5) * 100)}%`)
 

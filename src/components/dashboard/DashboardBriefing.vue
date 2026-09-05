@@ -18,16 +18,8 @@
           <span v-if="topWeightLabel">侧重{{ topWeightLabel }}</span>
         </div>
         <p v-if="!user.profile.onboardingDone" class="briefing-onboard">
-          <template v-if="billing.canUseProHud">
-            私人定制未完成（{{ user.profile.scenarioProgress || 0 }}/88）—
-            <router-link to="/settings">去答完细分题</router-link>
-            ，管家才能给出贴合约束的建议。
-          </template>
-          <template v-else>
-            基础定制未完成—
-            <router-link to="/settings?focus=essentials#profile-scenario">去答完 11 题</router-link>
-            ，即可生成观察简报。
-          </template>
+          画像未填时按保守默认出简报。
+          <router-link to="/settings#profile-scenario">校准后会更贴你</router-link>
         </p>
       </header>
 
@@ -86,7 +78,6 @@ import { computed, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { usePortfolioStore } from '@/store/portfolio'
-import { useBillingStore } from '@/store/billing'
 import { recordAdviceFeedback, extractConstraints } from '@/services/constraints.js'
 import {
   suggestPositionDelta,
@@ -113,7 +104,6 @@ const props = defineProps({
 
 const user = useUserStore()
 const portfolio = usePortfolioStore()
-const billing = useBillingStore()
 const router = useRouter()
 const feedback = reactive({})
 const shownAt = reactive({})

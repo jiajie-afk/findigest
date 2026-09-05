@@ -42,16 +42,18 @@ import { useBillingStore } from '@/store/billing'
  * Accepts values like `/app?edition=pro` (encoded or plain).
  */
 export function resolvePostAuthPath(redirect) {
-  if (typeof redirect !== 'string' || !redirect) return '/app'
+  if (typeof redirect !== 'string' || !redirect) return '/app?edition=pro'
   let path = redirect.trim()
   try {
     path = decodeURIComponent(path)
   } catch {
     /* keep raw */
   }
-  if (!path.startsWith('/') || path.startsWith('//')) return '/app'
-  if (path.startsWith('/auth')) return '/app'
-  if (path.startsWith('/onboarding/edition')) return '/app'
+  if (!path.startsWith('/') || path.startsWith('//')) return '/app?edition=pro'
+  if (path.startsWith('/auth')) return '/app?edition=pro'
+  if (path.startsWith('/onboarding/edition') || path.startsWith('/pricing') || path.startsWith('/preview/')) {
+    return '/app?edition=pro'
+  }
   // Strip query for router path; edition applied separately
   const q = path.indexOf('?')
   if (q >= 0) path = path.slice(0, q) || '/app'
@@ -290,17 +292,17 @@ export const useUserStore = defineStore('user', () => {
     )
     // Pro Desk skin requires active entitlement (paid or local free)
     if (style === 'prodesk' && !ent.canUseProdeskStyle) {
-      toast('当前环境不可用 Pro Desk')
+      toast('当前环境不可用专业密度')
       return
     }
-    // Active Pro locks Aimlabs cyan desk — don't silently strip via soft/journal/luxury
+    // Active Pro locks denser desk — don't silently strip via soft/journal/luxury
     if (ent.canUseProdeskStyle && profile.value?.productEdition === 'pro' && style !== 'prodesk') {
       designStyle.value = 'prodesk'
       storageSet(STYLE_KEY, JSON.stringify('prodesk'))
       uiTheme.value = 'dark'
       storageSet(THEME_KEY, JSON.stringify('dark'))
       persist()
-      toast('Pro 版锁定 Pro Desk（Aimlabs HUD）')
+      toast('Pro 版锁定专业密度')
       return
     }
     designStyle.value = style
@@ -311,10 +313,10 @@ export const useUserStore = defineStore('user', () => {
     }
     persist()
     const labels = {
-      luxury: '已切换：Museum Desk（Cipher Museum）',
-      journal: '已切换：Journal（华尔街日报风）',
-      soft: '已切换：Soft Fintech',
-      prodesk: '已切换：Pro Desk（Aimlabs HUD）',
+      luxury: '已切换：基础密度',
+      journal: '已切换：报纸外观',
+      soft: '已切换：浅色外观',
+      prodesk: '已切换：专业密度',
     }
     toast(labels[style] || '已切换外观')
   }
@@ -397,7 +399,7 @@ export const useUserStore = defineStore('user', () => {
       }
     }
     if (!opts.silent) {
-      toast(edition === 'pro' ? '已进入 Pro Desk' : '已进入基础版（Museum Desk）')
+      toast(edition === 'pro' ? '已进入专业台' : '已进入基础版')
     }
     return true
   }

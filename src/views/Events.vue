@@ -153,10 +153,10 @@
     </div>
 
     <p v-if="events.tab === 'cctv'" class="ev-scope">
-      含昨晚《新闻联播》官方分条以及央视网国内、财经。列表不裁剪。对上持仓的标「关我仓」，不是买入理由。
+      含昨晚《新闻联播》官方分条以及央视网国内、财经。列表不裁剪。对上持仓的标「关我仓」，不是买入理由。每条可开「AI摘要」，看事实和板块传导。
     </p>
     <p v-else-if="events.tab === 'cctvWorld'" class="ev-scope">
-      含《新闻联播》国际段和央视网国际频道。完整列表保留；对上持仓的同样会标出来。
+      含《新闻联播》国际段和央视网国际频道。完整列表保留；对上持仓的同样会标出来。每条也可开「AI摘要」。
     </p>
     <p v-else-if="events.tab === 'market'" class="ev-scope">
       东方财富预约披露（近 14 天）+ 本地催化库。不是买卖指令，用来排交易窗口。
@@ -291,6 +291,7 @@
               rel="noopener noreferrer"
             >打开央视原文</a>
             <span v-else class="ev-src-miss">无来源</span>
+            <NewsAiBrief :item="e" />
           </div>
         </div>
       </li>
@@ -345,6 +346,7 @@
               rel="noopener noreferrer"
             >{{ sourceOf(e).source || '查看来源' }}</a>
             <span v-else class="ev-src-miss">无来源</span>
+            <NewsAiBrief v-if="e._source === 'cctv'" :item="e" />
             <button
               v-if="events.tab === 'manual' && e.id"
               type="button"
@@ -373,6 +375,7 @@ import { useUserStore } from '@/store/user'
 import { usePortfolioStore } from '@/store/portfolio'
 import { resolveEventSource } from '@/utils/eventSource'
 import { daysUntil, windowStatus } from '@/services/earningsCalendar.js'
+import NewsAiBrief from '@/components/events/NewsAiBrief.vue'
 
 const events = useEventStore()
 const user = useUserStore()

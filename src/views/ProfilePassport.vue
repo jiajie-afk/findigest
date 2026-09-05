@@ -56,7 +56,7 @@
           <input v-model.number="overrides.singleStockMax" type="number" min="5" max="60" placeholder="如 25" />
         </label>
       </div>
-      <p class="hint">留空则沿用 88 题聚合结果。保存后覆盖问卷推导值。</p>
+      <p class="hint">留空则沿用已答画像。保存后覆盖问卷推导值。</p>
       <button class="btn bp" type="button" @click="saveOverrides">保存纠错并重算</button>
     </div>
 
@@ -158,9 +158,9 @@ const continueScenarioTo = computed(() => {
 })
 
 const continueScenarioLabel = computed(() => {
-  if (!essentialsComplete.value) return '继续答核心题'
-  if (billing.canUseProHud && !user.profile.onboardingDone) return '继续补全 88 题'
-  return '查看私人定制'
+  if (!essentialsComplete.value) return '校准画像（可选）'
+  if (billing.canUseProHud && !user.profile.onboardingDone) return '继续补全画像'
+  return '查看画像'
 })
 
 const overrides = reactive({

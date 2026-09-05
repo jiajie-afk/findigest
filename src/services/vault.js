@@ -98,6 +98,42 @@ export function saveAccounts(list) {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list))
 }
 
+export const GUEST_ACCOUNT_ID = 'guest-local'
+
+/** Local desk without email login. Login remains optional. */
+export function ensureLocalGuestSession() {
+  const existing = getSession()
+  if (existing?.accountId) return existing
+  const accounts = listAccounts()
+  let guest = accounts.find((a) => a.guest || a.accountId === GUEST_ACCOUNT_ID)
+  if (!guest) {
+    guest = {
+      accountId: GUEST_ACCOUNT_ID,
+      email: '',
+      displayName: '本地',
+      guest: true,
+      createdAt: Date.now(),
+    }
+    saveAccounts([...accounts, guest])
+    if (!hasVaultData(GUEST_ACCOUNT_ID)) initFreshVault(GUEST_ACCOUNT_ID)
+  } else if (!hasVaultData(guest.accountId)) {
+    initFreshVault(guest.accountId)
+  }
+  const session = {
+    accountId: guest.accountId,
+    email: '',
+    displayName: guest.displayName || '本地',
+    guest: true,
+  }
+  setSession(session)
+  return session
+}
+
+export function isGuestSession(session = getSession()) {
+  if (!session?.accountId) return true
+  return !!session.guest || !session.email
+}
+
 export function getSession() {
   try {
     return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
@@ -288,11 +324,11 @@ export function initFreshVault(accountId) {
       scenarioAnswers: {},
       preferredIndustries: [],
       avoidIndustries: [],
-      productEdition: 'basic',
+      productEdition: 'pro',
     }),
   )
   localStorage.setItem(prefix + 'fd_theme', JSON.stringify('dark'))
-  localStorage.setItem(prefix + 'fd_style', JSON.stringify('luxury'))
+  localStorage.setItem(prefix + 'fd_style', JSON.stringify('prodesk'))
 }
 
 /** Snapshot all vault keys for an account (reset rollback). */

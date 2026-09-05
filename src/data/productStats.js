@@ -40,6 +40,9 @@ export const PRODUCT_STATS = [
 ]
 
 export const COPY = {
+  identity: '价值投资的研究台',
+  heroLead: '每天一屏该看的三件事。',
+  heroCta: '免费进入 Pro',
   paradigmCount: PARADIGM_DISPLAY,
   anchorCount: ANCHOR_ARCHETYPE_DISPLAY,
   universeCount: UNIVERSE_DISPLAY,

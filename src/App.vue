@@ -115,6 +115,18 @@ watch(
   },
 )
 
+let deskReady = false
+watch(
+  () => auth.session?.accountId,
+  async (id, prev) => {
+    if (!deskReady || !id || id === prev) return
+    user.hydrate()
+    await billing.hydrate()
+    user.syncEditionFromEntitlements({ silent: true })
+    await Promise.all([portfolio.load(), events.load()])
+  },
+)
+
 onMounted(async () => {
   auth.hydrate()
   if (getActiveAccountId()) {
@@ -125,8 +137,10 @@ onMounted(async () => {
     user.syncEditionFromEntitlements({ silent: true })
     // Deep-link last so landing「进入基础版」wins over paid-plan hydrate
     const want = String(route.query.edition || '').toLowerCase()
-    if (want === 'basic' || want === 'pro') {
-      user.setProductEdition(want, { silent: true })
+    if (want === 'basic') {
+      user.setProductEdition('basic', { silent: true })
+    } else {
+      user.setProductEdition('pro', { silent: true })
     }
     await Promise.all([portfolio.load(), events.load(), ensureStyleCss()])
     user.recalibrate().catch(() => {})
@@ -134,6 +148,7 @@ onMounted(async () => {
     billing.reset()
     await ensureStyleCss()
   }
+  deskReady = true
 })
 </script>
 

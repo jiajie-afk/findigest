@@ -138,9 +138,9 @@ export const DEFAULT_PROFILE = {
   scenarioProgress: 0,
   lastCalibration: null,
   /**
-   * 产品版本：basic=免费基础版（Museum Desk，新用户默认）；pro=Pro Desk（开通付费 Pro 后启用）
+   * 产品版本：进来即 Pro。basic 仍可在设置里切回。
    */
-  productEdition: 'basic',
+  productEdition: 'pro',
   /** 情景题答案记录 */
   scenarioAnswers: {},
   /** 用户在画像说明书中的手动纠错 */
@@ -1251,8 +1251,7 @@ export function applyScenarioAnswers(profile, answers, opts = {}) {
 
 function normalizeProductEdition(ed) {
   if (ed === 'basic' || ed === 'pro') return ed
-  // 缺字段 / null → 基础版（不再强制版本选择闸门）
-  return 'basic'
+  return 'pro'
 }
 
 /** 从旧 v1/v2 画像迁移 */

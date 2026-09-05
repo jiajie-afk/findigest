@@ -144,7 +144,7 @@
             <input class="imp-file-hidden" type="file" accept="image/*" @change="onImage" />
           </label>
         </div>
-        <p class="imp-hint">拍交易端持仓页，或 Ctrl+V 粘贴截图。第一次会加载中文模型，稍等几秒。</p>
+        <p class="imp-hint">拍交易端持仓页，或 Ctrl+V 粘贴截图。认出股票名和代码后会直接写入持仓，可再校对。</p>
         <img v-if="shotPreview" class="imp-preview" :src="shotPreview" alt="待识别截图" />
         <p v-if="ocrStatus" class="imp-ocr">{{ ocrStatus }}</p>
       </div>
@@ -255,6 +255,7 @@ import {
   rowsToCommit,
   htmlTableToText,
 } from '@/services/holdingsImport.js'
+import { STOCK_NAMES } from '@/data/stock_names.js'
 import { recognizeHoldingsImage } from '@/services/ocrHoldings.js'
 import { apiUrl } from '@/services/apiClient.js'
 import { brokerById } from '@/data/brokerLogin.js'
@@ -431,11 +432,18 @@ async function runOcr(fileOrBlob) {
       },
     })
     applyParsed(result, { silent: true })
-    ocrStatus.value = rows.value.length
-      ? `认出 ${rows.value.length} 条${dropped.value.length ? `，丢掉 ${dropped.value.length} 条` : ''}。黄色行为低置信，请校对`
-      : dropped.value.length
-        ? `没认出持仓，丢掉 ${dropped.value.length} 条，见下方原因`
-        : '没认出持仓，请换清晰截图或改粘贴'
+    const written = autoWriteKnownHoldings()
+    if (written) {
+      ocrStatus.value = `已对照股票名和代码写入持仓：新增 ${written.added} · 更新 ${written.updated}${
+        dropped.value.length ? `，丢掉 ${dropped.value.length} 条` : ''
+      }`
+    } else {
+      ocrStatus.value = rows.value.length
+        ? `认出 ${rows.value.length} 条${dropped.value.length ? `，丢掉 ${dropped.value.length} 条` : ''}。黄色行为低置信，请校对`
+        : dropped.value.length
+          ? `没认出持仓，丢掉 ${dropped.value.length} 条，见下方原因`
+          : '没认出持仓，请换清晰截图或改粘贴'
+    }
   } catch (err) {
     console.error(err)
     const detail = err?.message ? String(err.message).slice(0, 80) : ''
@@ -589,6 +597,28 @@ function toggleAll(v) {
   rows.value.forEach((r) => {
     r.selected = v
   })
+}
+
+function autoWriteKnownHoldings() {
+  const known = rows.value.filter((r) => r.selected !== false && r.code && STOCK_NAMES[r.code])
+  if (!known.length) return null
+  if (!portfolioId.value) portfolioId.value = portfolio.portfolios[0]?.id
+  const dest = portfolio.portfolios.find((p) => p.id === portfolioId.value)
+  if (!dest) return null
+  const payload = rowsToCommit(known).map((row) => {
+    const existing = dest.holdings.find((h) => String(h.code) === row.code)
+    if (!existing) return row
+    return {
+      ...row,
+      shares: row.shares > 0 ? row.shares : existing.shares,
+      cost: row.cost > 0 ? row.cost : existing.cost,
+    }
+  })
+  if (!payload.length) return null
+  const result = portfolio.upsertHoldings(portfolioId.value, payload)
+  user.toast(`已对照股票名和代码写入持仓：新增 ${result.added} · 更新 ${result.updated}`)
+  portfolio.autoFetchAll().catch(() => {})
+  return result
 }
 
 function commit() {

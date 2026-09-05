@@ -102,11 +102,11 @@ const isPreview = computed(() => isPreviewPro.value || isPreviewBasic.value)
 
 const isPro = computed(() => billing.canSeeProNav || isPreviewPro.value)
 const navTag = computed(() => {
-  if (isPreviewBasic.value) return 'Museum Desk'
-  if (isPro.value) return 'Pro Desk'
-  if (user.designStyle === 'journal') return 'Private Desk'
-  if (user.designStyle === 'luxury') return 'Museum Desk'
-  return '私人台'
+  if (isPreviewBasic.value) return '基础台'
+  if (isPro.value) return '专业台'
+  if (user.designStyle === 'journal') return '研究台'
+  if (user.designStyle === 'luxury') return '基础台'
+  return '研究台'
 })
 
 const editionBadge = computed(() => {
@@ -117,6 +117,7 @@ const editionBadge = computed(() => {
 })
 
 const shortName = computed(() => {
+  if (auth.isGuest) return '登录'
   const n = auth.displayName || user.nickname || '我'
   return n.length > 6 ? n.slice(0, 6) : n
 })
@@ -128,8 +129,8 @@ const homeTo = computed(() => {
 })
 
 const accountTo = computed(() => {
-  if (isPreview.value) {
-    const dest = isPreviewPro.value ? '/app?edition=pro' : '/app?edition=basic'
+  if (isPreview.value || auth.isGuest) {
+    const dest = isPreviewBasic.value ? '/app?edition=basic' : '/app?edition=pro'
     return { path: '/auth', query: { redirect: dest } }
   }
   return '/more'

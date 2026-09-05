@@ -1,8 +1,8 @@
 <template>
   <div class="scenario">
-    <!-- Basic：11 题已齐 → 完成基础定制（无补全 88 入口） -->
+    <!-- Basic：基础画像已齐 → 回今日 -->
     <div v-if="showBasicDoneGate" class="scenario-gate">
-      <p class="scenario-tip">基础版私人定制已完成（11 题）。可回今日生成观察简报。</p>
+      <p class="scenario-tip">基础画像已填。可回今日。</p>
       <div class="scenario-nav">
         <button type="button" class="btn bp" @click="finishEssentials">完成基础定制</button>
       </div>
@@ -85,13 +85,13 @@
         <button type="button" class="btn bs" @click="saveProgress">暂存进度</button>
       </div>
       <p v-if="!isProProfile && !identityDone" class="scenario-tip">
-        基础版共 {{ essentialTotal }} 题，答完即可生成观察简报。
+        选填。不答也能生成今日简报，答完会更贴你的约束。
       </p>
       <p v-else-if="isProProfile && !identityDone" class="scenario-tip">
-        建议先答完「身份与资金」{{ essentialTotal }} 题，即可生成观察简报。
+        选填。先答「身份与资金」会更准，但不挡今日。
       </p>
       <p v-else-if="isProProfile && unanswered > 0" class="scenario-tip">
-        核心题已完成。可先回今日生成简报，其余 {{ unanswered }} 题随时补。
+        可先回今日。其余 {{ unanswered }} 题随时补。
       </p>
     </template>
   </div>

@@ -1,7 +1,7 @@
 /**
  * Commercial entitlements — single source of truth.
- * Membership (paid / local free-Pro) unlocks the Pro shell; it must not trap the user in it.
- * productEdition is the chosen desk. Paid + basic → Museum Desk, with the right to switch back.
+ * Free-launch / local host can pick Pro without payment. productEdition is the chosen desk.
+ * Paid + basic still stays Museum Desk. Login is optional.
  */
 
 import { isLocalFreeProHost } from './localOwner.js'

@@ -10,6 +10,7 @@ import billingHandler from './api/billing.js'
 import adminHandler from './api/admin.js'
 import usageHandler from './api/usage.js'
 import cctvNewsHandler from './api/cctv-news.js'
+import newsBriefHandler from './api/news-brief.js'
 
 /** Same /api/proxy allowlist handler for Vite dev + preview (matches Vercel). */
 function findigestApiProxy() {
@@ -64,6 +65,11 @@ function findigestApiProxy() {
     server.middlewares.use(
       mountVercelHandler(cctvNewsHandler, {
         match: (url) => url.startsWith('/api/cctv-news'),
+      }),
+    )
+    server.middlewares.use(
+      mountVercelHandler(newsBriefHandler, {
+        match: (url) => url.startsWith('/api/news-brief'),
       }),
     )
   }

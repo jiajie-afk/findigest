@@ -11,14 +11,24 @@
     <div class="card" style="padding: 22px">
       <h3 class="sec">私人账号</h3>
       <p class="hint">
-        当前：<strong>{{ auth.email || '未登录' }}</strong>
-        · 持仓 / 事件 / 画像按账号隔离 · 新账号默认空白
+        <template v-if="auth.isGuest">
+          当前：<strong>未登录</strong>（本机专业台）· 登录可选，用来同步云端
+        </template>
+        <template v-else>
+          当前：<strong>{{ auth.email || '已登录' }}</strong>
+          · 持仓 / 事件 / 画像按账号隔离
+        </template>
       </p>
       <div class="account-actions">
-        <button type="button" class="btn bs sm" :disabled="auth.busy" @click="syncCloud">同步到云端</button>
-        <button type="button" class="btn bs sm" @click="doLogout">退出登录</button>
+        <template v-if="auth.isGuest">
+          <router-link class="btn bp sm" :to="{ path: '/auth', query: { redirect: '/settings' } }">登录</router-link>
+        </template>
+        <template v-else>
+          <button type="button" class="btn bs sm" :disabled="auth.busy" @click="syncCloud">同步到云端</button>
+          <button type="button" class="btn bs sm" @click="doLogout">退出登录</button>
+        </template>
       </div>
-      <div v-if="auth.isLoggedIn" class="pw-change">
+      <div v-if="auth.isLoggedIn && !auth.isGuest" class="pw-change">
         <h4 class="sec-sub">修改密码</h4>
         <p class="hint">记得旧密码时可无损改密（本机与云端保险箱会用新密码重新加密）。</p>
         <label class="fld">
@@ -63,8 +73,8 @@
         ·
         {{
           billing.localFreePro
-            ? '专业版限时免费，点「Pro 专业台」即可，不会跳付费页。'
-            : '基础版免费；开通 Pro 后使用 Pro Desk（Aimlabs 式 HUD）与 AI 增强。'
+            ? '专业台可直接进入，点「Pro 专业台」即可。登录不是必须的。'
+            : '基础版免费；开通 Pro 后导航更密，今日简报可 AI 增强。'
         }}
       </p>
       <div class="edition-row">
@@ -86,7 +96,7 @@
         </button>
       </div>
       <p v-if="user.isProEdition" class="hint" style="margin-top: 10px">
-        Pro 台建议补全 88 题私人定制，校准会更准。
+        Pro 台可补全画像，校准会更准。不挡今日。
       </p>
     </div>
 
@@ -108,8 +118,8 @@
             <span class="pv-bar lux-bar" />
             <span class="pv-card lux-card" />
           </div>
-          <strong>Museum Desk</strong>
-          <span>Cipher Museum · 墨黑 · 羊皮纸 · 金 #c5a059</span>
+          <strong>基础密度</strong>
+          <span>阅读档 · 今日一屏</span>
           <em v-if="user.designStyle === 'luxury'" class="style-on">使用中</em>
         </button>
 
@@ -126,8 +136,8 @@
             <span class="pv-bar prodesk-bar" />
             <span class="pv-card prodesk-card" />
           </div>
-          <strong>Pro Desk</strong>
-          <span>Aimlabs · 近黑 HUD · 电青 #00e8c8</span>
+          <strong>Pro 密度</strong>
+          <span>同台更高密度 · 估值仓位同屏</span>
           <em v-if="user.designStyle === 'prodesk'" class="style-on">使用中</em>
         </button>
 
@@ -144,8 +154,8 @@
             <span class="pv-bar" />
             <span class="pv-card" />
           </div>
-          <strong>Soft Fintech</strong>
-          <span>浅色理财 App · 青绿强调 · 圆角卡片</span>
+          <strong>浅色</strong>
+          <span>浅底 · 适合亮环境</span>
           <em v-if="user.designStyle === 'soft'" class="style-on">使用中</em>
         </button>
 
@@ -162,8 +172,8 @@
             <span class="pv-rule" />
             <span class="pv-cols" />
           </div>
-          <strong>Journal</strong>
-          <span>华尔街日报感 · 报纸纸色 · 衬线报头</span>
+          <strong>报纸</strong>
+          <span>衬线报头 · 阅读纸色</span>
           <em v-if="user.designStyle === 'journal'" class="style-on">使用中</em>
         </button>
       </div>
@@ -187,7 +197,7 @@
     </div>
 
     <div id="profile-scenario" class="card" style="padding: 22px">
-      <h3 class="sec">{{ isProProfile ? '精密投资画像（88 题）' : '基础投资画像（11 题）' }}</h3>
+      <h3 class="sec">投资画像</h3>
       <div class="profile-completeness">
         <div class="pc-ring" :aria-label="'完成度 ' + completeness + '%'">
           <svg viewBox="0 0 36 36">
@@ -402,12 +412,12 @@ const essentialsComplete = computed(
 
 const completenessHint = computed(() => {
   if (!isProProfile.value) {
-    if (!essentialsComplete.value) return '先答完 11 题即可生成观察简报'
-    return '基础版私人定制已完成（11 题）'
+    if (!essentialsComplete.value) return '可选。不填也能生成今日简报'
+    return '基础画像已填'
   }
-  if (!essentialsComplete.value) return '先答完身份章 11 题即可生成观察简报'
-  if (!user.profile.onboardingDone) return '核心已齐，可随时补全其余题'
-  return '私人定制已完成，AI 会按你的约束给建议'
+  if (!essentialsComplete.value) return '可选。不填也能生成今日简报'
+  if (!user.profile.onboardingDone) return '可随时补全其余题，不挡今日'
+  return '画像已完成，简报会按你的约束裁'
 })
 const form = reactive({
   nickname: user.nickname,
@@ -521,10 +531,10 @@ const canAddCustom = computed(() => {
 })
 
 const currentLabel = computed(() => {
-  if (user.designStyle === 'prodesk') return 'Pro Desk（Aimlabs 专业台）'
-  if (user.designStyle === 'luxury') return 'Museum Desk（Cipher Museum 基础台）'
-  if (user.designStyle === 'journal') return 'Journal（华尔街日报风）'
-  return 'Soft Fintech'
+  if (user.designStyle === 'prodesk') return 'Pro 密度'
+  if (user.designStyle === 'luxury') return '基础密度'
+  if (user.designStyle === 'journal') return '报纸'
+  return '浅色'
 })
 
 const themes = [
@@ -646,17 +656,10 @@ async function doChangePassword() {
 
 function doLogout() {
   auth.logout()
-  billing.reset()
-  router.push('/auth')
+  router.push('/app')
 }
 
 function onPickProEdition() {
-  if (!auth.isLoggedIn) {
-    user.toast('请先登录后再切换系统')
-    router.push({ path: '/auth', query: { redirect: '/settings' } })
-    return
-  }
-  // Localhost / DEV: enter Pro Desk directly, never bounce to pricing
   if (billing.isBillingPro || billing.localFreePro) {
     user.setProductEdition('pro')
     return

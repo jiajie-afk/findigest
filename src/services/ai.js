@@ -575,7 +575,7 @@ ${JSON.stringify((items || []).slice(0, 6), null, 2)}`)
   return sections.join('\n\n')
 }
 
-async function callLLM(aiConfig, prompt, opts = {}) {
+export async function callLLM(aiConfig, prompt, opts = {}) {
   const url = `${aiConfig.baseUrl.replace(/\/$/, '')}/chat/completions`
   const res = await fetch(url, {
     method: 'POST',
@@ -588,7 +588,7 @@ async function callLLM(aiConfig, prompt, opts = {}) {
       temperature: opts.temperature ?? 0.6,
       max_tokens: opts.maxTokens ?? 1200,
       messages: [
-        { role: 'system', content: ANALYST_SYSTEM },
+        { role: 'system', content: opts.system || ANALYST_SYSTEM },
         { role: 'user', content: prompt },
       ],
     }),

@@ -31,7 +31,7 @@
 
         <div v-else-if="active.demo === 'swing'" class="demo demo-swing">
           <div class="demo-event">
-            <span class="demo-event-tag">CATALYST</span>
+            <span class="demo-event-tag">事件窗</span>
             <strong>业绩预告窗口</strong>
             <p>与你的持仓相关 · 来源可追溯</p>
           </div>
@@ -81,7 +81,7 @@
       </ul>
 
       <div class="ld-story-cta">
-        <a class="ld-cta" :href="enterHref" @click="onEnter">免费用基础版</a>
+        <a class="ld-cta" :href="enterHref" @click="onEnter">{{ COPY.heroCta }}</a>
         <button type="button" class="ld-cta-ghost" @click="$emit('close')">继续浏览</button>
       </div>
     </article>
@@ -89,6 +89,7 @@
 </template>
 
 <script setup>
+import { COPY } from '@/data/productStats.js'
 import { onNavClick } from '@/utils/navHref.js'
 
 const props = defineProps({

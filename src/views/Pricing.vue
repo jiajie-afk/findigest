@@ -23,7 +23,7 @@
     <template v-else-if="billing.localFreePro">
       <section class="pr-contact" aria-label="限时免费">
         <p class="pr-contact-kicker">限时免费</p>
-        <p class="pr-contact-lead">登录后点下方按钮即可进入 Pro Desk（HUD、工作区导航、AI 增强）。</p>
+        <p class="pr-contact-lead">登录后点下方按钮即可进入专业台（更深导航、AI 增强）。</p>
         <button
           v-if="auth.isLoggedIn"
           class="btn bp"

@@ -374,6 +374,255 @@ function lookupCodeByName(name) {
   return null
 }
 
+let nameEntries = null
+function getNameEntries() {
+  if (nameEntries) return nameEntries
+  nameEntries = Object.entries(STOCK_NAMES)
+    .map(([code, name]) => ({ code, name: String(name || '').replace(/\s+/g, '') }))
+    .filter((x) => x.name.length >= 2)
+    .sort((a, b) => b.name.length - a.name.length)
+  return nameEntries
+}
+
+function confidenceRank(c) {
+  if (c === 'high') return 3
+  if (c === 'medium') return 2
+  return 1
+}
+
+function locateKnownCodes(text) {
+  const raw = String(text || '')
+  const hits = []
+  const seen = new Set()
+  const add = (via, at, end) => {
+    if (!via?.code || !STOCK_NAMES[via.code] || at == null) return
+    const key = `${via.code}@${at}`
+    if (seen.has(key)) return
+    seen.add(key)
+    hits.push({ at, end, code: via })
+  }
+  for (const m of raw.matchAll(/[0-9A-Za-z]{5,8}/g)) {
+    add(normalizeOcrStockCode(m[0]), m.index, m.index + m[0].length)
+  }
+  for (const m of raw.matchAll(/\d{5,6}/g)) {
+    add(normalizeStockCode(m[0]) || normalizeOcrStockCode(m[0]), m.index, m.index + m[0].length)
+  }
+  hits.sort((a, b) => a.at - b.at)
+  return hits
+}
+
+function collectKnownCodes(text) {
+  const seen = new Set()
+  return locateKnownCodes(text)
+    .map((h) => h.code)
+    .filter((c) => {
+      if (seen.has(c.code)) return false
+      seen.add(c.code)
+      return true
+    })
+}
+
+function windowsForCodes(line, hits) {
+  if (!hits.length) return []
+  return hits.map((h, i) => {
+    const prevEnd = i === 0 ? 0 : hits[i - 1].end
+    const nextAt = i === hits.length - 1 ? line.length : hits[i + 1].at
+    return {
+      code: h.code,
+      nameText: line.slice(prevEnd === 0 && i === 0 ? 0 : prevEnd, nextAt),
+      numText: line.slice(h.at, nextAt),
+    }
+  })
+}
+
+function collectKnownNames(text) {
+  const compact = String(text || '').replace(/\s+/g, '')
+  const hits = []
+  const used = new Array(compact.length).fill(false)
+  for (const { code, name } of getNameEntries()) {
+    let from = 0
+    while (from < compact.length) {
+      const i = compact.indexOf(name, from)
+      if (i < 0) break
+      let overlap = false
+      for (let k = i; k < i + name.length; k++) {
+        if (used[k]) {
+          overlap = true
+          break
+        }
+      }
+      if (!overlap) {
+        for (let k = i; k < i + name.length; k++) used[k] = true
+        hits.push({ code, name })
+      }
+      from = i + name.length
+    }
+  }
+  return hits
+}
+
+function stripKnownCodeTokens(text) {
+  return String(text || '').replace(/[0-9A-Za-z]{5,8}/g, (tok) => {
+    const via = normalizeOcrStockCode(tok) || normalizeStockCode(tok)
+    return via && STOCK_NAMES[via.code] ? ' ' : tok
+  })
+}
+
+function numbersFromText(text) {
+  const nums = []
+  for (const m of stripKnownCodeTokens(text).matchAll(/-?\d[\d,]*(?:\.\d+)?\s*[万亿]?/g)) {
+    const n = parseNumberLoose(m[0])
+    if (Number.isFinite(n)) nums.push(n)
+  }
+  return pickSharesAndCost(nums)
+}
+
+function mergeKnownRow(map, row) {
+  const prev = map.get(row.code)
+  if (!prev) {
+    map.set(row.code, { ...row })
+    return
+  }
+  const next = { ...prev }
+  if (confidenceRank(row.confidence) > confidenceRank(prev.confidence)) next.confidence = row.confidence
+  if (row.shares > 0 && (!(prev.shares > 0) || confidenceRank(row.confidence) >= confidenceRank(prev.confidence))) {
+    next.shares = row.shares
+  }
+  if (row.cost > 0 && (!(prev.cost > 0) || confidenceRank(row.confidence) >= confidenceRank(prev.confidence))) {
+    next.cost = row.cost
+  }
+  if (STOCK_NAMES[row.code]) next.name = STOCK_NAMES[row.code]
+  map.set(row.code, next)
+}
+
+/**
+ * Walk OCR / messy text and keep only names + codes that exist in the universe.
+ */
+export function extractHoldingsByNameAndCode(text) {
+  const dropped = []
+  const map = new Map()
+
+  const add = ({ code, ex, shares, cost, confidence, name }) => {
+    if (!code || !STOCK_NAMES[code]) return
+    const via = normalizeStockCode(code, ex) || normalizeOcrStockCode(code, ex)
+    if (!via || !STOCK_NAMES[via.code]) return
+    mergeKnownRow(map, {
+      code: via.code,
+      ex: via.ex,
+      name: STOCK_NAMES[via.code] || name || via.code,
+      shares: Number.isFinite(shares) ? shares : 0,
+      cost: Number.isFinite(cost) ? cost : 0,
+      selected: true,
+      confidence: confidence || 'medium',
+      source: 'ocr',
+    })
+  }
+
+  splitLines(text).forEach((line) => {
+    if (isTotalOrCashLine(line) && !/\d{5,6}/.test(line)) {
+      dropped.push({ preview: previewLine(line), reason: '合计 / 资产行，不是持仓' })
+      return
+    }
+    const hits = locateKnownCodes(line)
+    const names = collectKnownNames(line)
+    const windows = windowsForCodes(line, hits)
+    const paired = new Set()
+
+    if (windows.length) {
+      windows.forEach((w) => {
+        const localNames = collectKnownNames(w.nameText)
+        const selfName = localNames.find((n) => n.code === w.code.code) || names.find((n) => n.code === w.code.code)
+        const picked = numbersFromText(w.numText)
+        paired.add(w.code.code)
+        add({
+          code: w.code.code,
+          ex: w.code.ex,
+          shares: picked.shares,
+          cost: picked.cost,
+          confidence: selfName ? 'high' : 'medium',
+          name: selfName?.name || STOCK_NAMES[w.code.code],
+        })
+      })
+    } else {
+      const picked = numbersFromText(line)
+      names.forEach((n) => {
+        add({
+          code: n.code,
+          shares: picked.shares,
+          cost: picked.cost,
+          confidence: 'medium',
+          name: n.name,
+        })
+      })
+    }
+    names.forEach((n) => {
+      if (paired.has(n.code) || map.has(n.code)) return
+      const picked = numbersFromText(line)
+      add({
+        code: n.code,
+        shares: picked.shares,
+        cost: picked.cost,
+        confidence: 'medium',
+        name: n.name,
+      })
+    })
+  })
+
+  if (!map.size) {
+    const codes = collectKnownCodes(text)
+    const names = collectKnownNames(text)
+    const picked = numbersFromText(text)
+    const paired = new Set()
+    names.forEach((n) => {
+      const via = codes.find((c) => c.code === n.code)
+      if (!via) return
+      paired.add(n.code)
+      add({
+        code: via.code,
+        ex: via.ex,
+        shares: picked.shares,
+        cost: picked.cost,
+        confidence: 'high',
+        name: n.name,
+      })
+    })
+    codes.forEach((c) => {
+      if (paired.has(c.code)) return
+      add({
+        code: c.code,
+        ex: c.ex,
+        shares: picked.shares,
+        cost: picked.cost,
+        confidence: 'medium',
+        name: STOCK_NAMES[c.code],
+      })
+    })
+    names.forEach((n) => {
+      if (paired.has(n.code) || map.has(n.code)) return
+      add({
+        code: n.code,
+        shares: picked.shares,
+        cost: picked.cost,
+        confidence: 'medium',
+        name: n.name,
+      })
+    })
+  }
+
+  return { rows: [...map.values()], warnings: [], dropped }
+}
+
+function mergeImportRows(...lists) {
+  const map = new Map()
+  lists.forEach((list) => {
+    ;(list || []).forEach((row) => {
+      if (!row?.code) return
+      mergeKnownRow(map, row)
+    })
+  })
+  return [...map.values()]
+}
+
 const SKIP_NAME_TOKEN =
   /^(证券|代码|名称|数量|成本|市值|盈亏|持仓|可用|最新|现价|股票|余额|比例|浮动|盈亏比|市值合计|合计|小计|资产|账号)$/
 
@@ -528,9 +777,15 @@ export function htmlTableToText(html) {
  */
 export function parseOcrText(text) {
   const dropped = []
+  const dicted = extractHoldingsByNameAndCode(text)
   const lined = enrichImportRows(extractOcrLineRows(text, dropped))
-  if (lined.length) {
-    return { rows: dedupeRows(lined), warnings: [], dropped }
+  const merged = enrichImportRows(dedupeRows(mergeImportRows(dicted.rows, lined)))
+  const allDropped = [...dropped, ...(dicted.dropped || [])].filter((d) => {
+    const preview = String(d.preview || '')
+    return !merged.some((r) => preview.includes(r.code) || (r.name && preview.includes(r.name)))
+  })
+  if (merged.length) {
+    return { rows: merged, warnings: dicted.warnings || [], dropped: allDropped }
   }
   const parsed = parseHoldingsText(text, 'generic')
   const marked = enrichImportRows(
@@ -540,15 +795,15 @@ export function parseOcrText(text) {
       source: 'ocr',
     })),
   )
-  const allDropped = [...dropped, ...(parsed.dropped || [])]
+  const fallbackDropped = [...allDropped, ...(parsed.dropped || [])]
   if (!marked.length) {
     return {
       rows: [],
       warnings: (parsed.warnings || []).concat(['OCR 未识别到持仓行']),
-      dropped: allDropped,
+      dropped: fallbackDropped,
     }
   }
-  return { rows: dedupeRows(marked), warnings: parsed.warnings || [], dropped: allDropped }
+  return { rows: dedupeRows(marked), warnings: parsed.warnings || [], dropped: fallbackDropped }
 }
 
 /** Normalize rows coming from browser extension */

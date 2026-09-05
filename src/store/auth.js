@@ -6,6 +6,8 @@ import {
   saveAccounts,
   getSession,
   setSession,
+  ensureLocalGuestSession,
+  isGuestSession,
   clearSessionArtifacts,
   initFreshVault,
   exportVault,
@@ -44,6 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
   let cooldownTimer = null
 
   const isLoggedIn = computed(() => !!session.value?.accountId)
+  const isGuest = computed(() => isGuestSession(session.value))
   const email = computed(() => session.value?.email || '')
   const displayName = computed(() => session.value?.displayName || '')
   const emailVerified = computed(
@@ -51,7 +54,8 @@ export const useAuthStore = defineStore('auth', () => {
   )
 
   function hydrate() {
-    session.value = getSession()
+    const existing = getSession()
+    session.value = existing?.accountId ? existing : ensureLocalGuestSession()
   }
 
   function clearEmailProof() {
@@ -425,7 +429,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearSessionArtifacts()
     clearEmailProof()
     clearVaultUnlock()
-    session.value = null
+    session.value = ensureLocalGuestSession()
     cloudOk.value = false
   }
 
@@ -872,6 +876,7 @@ export const useAuthStore = defineStore('auth', () => {
     lastDevCode,
     codeCooldownSec,
     isLoggedIn,
+    isGuest,
     email,
     displayName,
     hydrate,

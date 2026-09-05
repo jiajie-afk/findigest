@@ -4,10 +4,10 @@
       <div>
         <h1 class="pt">我的</h1>
         <p class="pt-sub">
-          {{ auth.email || user.nickname }} · {{ billing.statusLabel }} ·
+          {{ auth.isGuest ? '未登录 · 登录可选' : auth.email || user.nickname }} · {{ billing.statusLabel }} ·
           {{
             isEmptyHoldings
-              ? '先导入持仓。开通 Pro 等有股票以后再说。'
+              ? '先导入持仓。登录不是必须的。'
               : billing.canSeeProNav
                 ? '专业台次要入口'
                 : '次要能力都在这里'
@@ -22,7 +22,7 @@
         <p class="sys-sub">
           当前：<strong>{{ user.editionLabel }}版</strong>
           <template v-if="user.isProEdition"> · 可随时回到基础版</template>
-          <template v-else-if="canEnterPro"> · 本账号已开通会员，可进专业台</template>
+          <template v-else-if="canEnterPro"> · 可直接进专业台</template>
           <template v-else> · 进专业台需会员账号</template>
         </p>
       </div>
@@ -49,7 +49,7 @@
       <p class="sys-hint">
         {{
           canEnterPro
-            ? '会员账号可在基础版与专业台之间切换；未开通会进入充值页。'
+            ? '基础版与专业台可随时切换。登录只为同步云端，不是必须的。'
             : '切换到专业台前需登录且账号为会员，否则会打开会员开通页。'
         }}
       </p>
@@ -71,7 +71,15 @@
       </a>
     </nav>
 
-    <button type="button" class="btn bs more-out" @click="onLogout">退出登录</button>
+    <button
+      v-if="auth.isGuest"
+      type="button"
+      class="btn bp more-out"
+      @click="router.push({ path: '/auth', query: { redirect: '/more' } })"
+    >
+      登录（可选）
+    </button>
+    <button v-else type="button" class="btn bs more-out" @click="onLogout">退出登录</button>
   </div>
 </template>
 
@@ -110,11 +118,11 @@ const items = computed(() => {
     title: '私人定制与偏好',
     desc: billing.canUseProHud
       ? user.profile.onboardingDone
-        ? '精密画像已齐 · 版本与提醒'
-        : '建议补全 88 题以校准 · 版本与提醒'
+        ? '画像已齐 · 版本与提醒'
+        : '可补全画像校准 · 版本与提醒'
       : essentialsOk
-        ? '基础版私人定制已完成（11 题）· 提醒与云同步'
-        : '先答完 11 题基础定制；提醒与云同步',
+        ? '基础画像已填 · 提醒与云同步'
+        : '画像可选 · 提醒与云同步',
   })
   if (!billing.canSeeProNav && !isEmptyHoldings.value) {
     base.push({
@@ -159,12 +167,6 @@ const items = computed(() => {
 function switchEdition(edition) {
   if (edition !== 'basic' && edition !== 'pro') return
 
-  if (!auth.isLoggedIn) {
-    user.toast('请先登录后再切换系统')
-    router.push({ path: '/auth', query: { redirect: '/more' } })
-    return
-  }
-
   if (edition === 'basic') {
     if (user.isBasicEdition) {
       user.toast('已在基础版')
@@ -192,8 +194,7 @@ function switchEdition(edition) {
 
 function onLogout() {
   auth.logout()
-  billing.reset()
-  router.push('/auth')
+  router.push('/app')
 }
 </script>
 
