@@ -29,11 +29,17 @@
   --ld-display-track: -0.02em;
   --ld-label-track: 0.14em;
   --ld-kicker-track: 0.16em;
+  min-height: 100vh;
   min-height: 100dvh;
-  background: var(--ld-ink);
-  color: var(--ld-paper);
+  background-color: #0a0b0c;
+  color: #ece6d8;
+  background: var(--ld-ink, #0a0b0c);
+  color: var(--ld-paper, #ece6d8);
   font-family: var(--ld-sans);
   overflow-x: visible;
+  forced-color-adjust: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .ld-hero,
@@ -398,8 +404,10 @@
   min-height: 46px;
   padding: 0 1.5rem;
   border-radius: var(--ld-radius);
-  background: var(--ld-gold);
-  color: var(--ld-ink);
+  background-color: #c5a059;
+  background: var(--ld-gold, #c5a059);
+  color: #0a0b0c;
+  color: var(--ld-ink, #0a0b0c);
   font-size: var(--ld-lead-size);
   font-weight: 700;
   text-decoration: none;
@@ -411,7 +419,8 @@
   -webkit-tap-highlight-color: rgba(197, 160, 89, 0.35);
 }
 .ld-cta-pro {
-  background: var(--ld-cyan);
+  background-color: #00e8c8;
+  background: var(--ld-cyan, #00e8c8);
   color: #050607;
 }
 @media (hover: hover) and (pointer: fine) {

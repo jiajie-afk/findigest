@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { CSS_TARGET, lightningcssCompat } from './lib/cssCompat.js'
 import { handleProxyHttp } from './lib/proxyCore.js'
 import { mountVercelHandler } from './lib/viteApiAdapter.js'
 import authHandler from './api/auth.js'
@@ -107,7 +108,12 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 4173,
     },
+    css: {
+      lightningcss: lightningcssCompat,
+    },
     build: {
+      // Minify overwrites css.lightningcss.targets with this list.
+      cssTarget: CSS_TARGET,
       rollupOptions: {
         output: {
           manualChunks(id) {

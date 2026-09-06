@@ -25,6 +25,7 @@
 [data-style='prodesk'],
 [data-edition='pro'][data-style='prodesk'] {
   color-scheme: dark;
+  color-scheme: only dark;
   --bg: #050607;
   --bg-deep: #030405;
   --bg2: transparent;
@@ -89,10 +90,12 @@
 
 [data-style='prodesk'] body,
 [data-style='prodesk'].app-shell {
-  background: var(--bg);
+  background-color: #050607;
+  background: var(--bg, #050607);
   background-image: var(--desk-glow);
   background-attachment: fixed;
-  color: var(--tp);
+  color: #e8f0f2;
+  color: var(--tp, #e8f0f2);
   font-family: var(--font);
   font-size: 13px;
 }

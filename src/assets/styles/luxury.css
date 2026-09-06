@@ -16,6 +16,7 @@
 
 [data-style='luxury'] {
   color-scheme: dark;
+  color-scheme: only dark;
   --bg: #0a0b0c;
   --bg-deep: #060607;
   --bg2: transparent;
@@ -77,10 +78,12 @@
 
 [data-style='luxury'] body,
 [data-style='luxury'].app-shell {
-  background: var(--bg);
+  background-color: #0a0b0c;
+  background: var(--bg, #0a0b0c);
   background-image: var(--desk-glow);
   background-attachment: fixed;
-  color: var(--tp);
+  color: #ece6d8;
+  color: var(--tp, #ece6d8);
   font-family: var(--font);
 }
 

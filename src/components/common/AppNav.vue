@@ -256,6 +256,7 @@ function isActive(link) {
   gap: 0;
   min-height: 56px;
   padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 11, 12, 0.94);
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   backdrop-filter: saturate(140%) blur(16px);
   -webkit-backdrop-filter: saturate(140%) blur(16px);
@@ -337,6 +338,7 @@ function isActive(link) {
     justify-content: space-around;
     min-height: 56px;
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 11, 12, 0.94);
     background: color-mix(in srgb, var(--bg) 94%, transparent);
     backdrop-filter: saturate(140%) blur(16px);
     -webkit-backdrop-filter: saturate(140%) blur(16px);
