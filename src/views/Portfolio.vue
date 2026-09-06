@@ -29,8 +29,8 @@
     <p class="import-hint">
       {{
         isEmpty
-          ? '可手动填一只，或粘贴券商表格 / 上传 CSV / 拍持仓截图。没有股票就不能刷新行情。'
-          : '导入可增改持仓。刷新行情只更新已有股票的现价，不会替你下单。'
+          ? '券商官网登录不会自动把持仓送进来。请粘贴表格、上传 CSV、拍截图，或手动填一只。'
+          : '导入可增改持仓。登录 FinDigest 账号会把本机持仓同步到云端；刷新行情只更新现价。'
       }}
     </p>
 
@@ -50,7 +50,7 @@
 
     <section v-if="isEmpty && !showAdd" class="empty-holdings card">
       <h2>先把持仓放进来</h2>
-      <p>没有股票就不能刷新行情、也不能算盈亏。手动填一只，或从券商表导入。</p>
+      <p>没有股票就不能刷新行情、也不能算盈亏。登录东方财富或同花顺不会自动同步，请在这里导入。</p>
       <div class="empty-holdings-actions">
         <button class="btn bp" type="button" @click="showImport = true">导入持仓</button>
         <button class="btn bs" type="button" @click="showAdd = true">手动添加</button>

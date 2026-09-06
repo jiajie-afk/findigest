@@ -24,6 +24,7 @@ import {
   readSyncMeta,
   writeSyncMeta,
   pickVaultWinner,
+  adoptGuestHoldings,
   starterPortfolio,
   snapshotVaultKeys,
   restoreVaultSnapshot,
@@ -56,6 +57,9 @@ export const useAuthStore = defineStore('auth', () => {
   function hydrate() {
     const existing = getSession()
     session.value = existing?.accountId ? existing : ensureLocalGuestSession()
+    if (session.value?.accountId && !isGuestSession(session.value)) {
+      adoptGuestHoldings(session.value.accountId)
+    }
   }
 
   function clearEmailProof() {
@@ -269,6 +273,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       sessionStorage.setItem(SESSION_PW_KEY, password)
       setVaultUnlock(password)
+      adoptGuestHoldings(accountId)
       const pushed = await pushCloud(password)
       clearSessionPassword()
       clearEmailProof()
@@ -389,6 +394,7 @@ export const useAuthStore = defineStore('auth', () => {
           JSON.stringify(starterPortfolio()),
         )
       }
+      adoptGuestHoldings(account.accountId)
 
       const pushed = await pushCloud(password, { force: preferLocalPush })
       if (!pushed && lastError.value === 'conflict' && remote?.vault) {
@@ -599,10 +605,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
       if (!data?.salt || !data?.passwordHash || !data?.enc) return null
       const vault = await decryptJson(password, data.salt, data.enc.iv, data.enc.payload)
-      writeSyncMeta(
-        { cloudUpdatedAt: Number(data.updatedAt) || Date.now(), localUpdatedAt: Number(data.updatedAt) || Date.now() },
-        data.accountId,
-      )
+      // Do not stamp sync clocks here — that makes pickVaultWinner see "equal"
+      // and keep a stale local starter, then push wipes the cloud desk.
       return {
         account: {
           accountId: data.accountId,

@@ -303,6 +303,80 @@ export function pickVaultWinner(accountId, remoteUpdatedAt) {
   return 'equal'
 }
 
+export function isStarterPortfolio(portfolios) {
+  if (!Array.isArray(portfolios) || portfolios.length !== 1) return false
+  const holdings = portfolios[0]?.holdings || []
+  if (holdings.length !== 1) return false
+  const row = holdings[0]
+  return String(row.code) === '600519' && Number(row.shares) === 100 && Number(row.cost) === 1296
+}
+
+export function holdingsCount(portfolios) {
+  if (!Array.isArray(portfolios)) return 0
+  return portfolios.reduce((n, p) => n + (Array.isArray(p?.holdings) ? p.holdings.length : 0), 0)
+}
+
+export function readPortfolios(accountId) {
+  if (!accountId) return null
+  try {
+    const raw = localStorage.getItem(vaultKey('fd_portfolios', accountId))
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Carry guest-local lots onto a signed-in account.
+ * Login used to switch namespaces and leave imported holdings on guest-local.
+ */
+export function adoptGuestHoldings(accountId, guestId = GUEST_ACCOUNT_ID) {
+  if (!accountId || accountId === guestId) return { adopted: 0, replaced: false }
+  const guestPf = readPortfolios(guestId)
+  if (!guestPf || !holdingsCount(guestPf)) return { adopted: 0, replaced: false }
+  const destPf = readPortfolios(accountId)
+  const destEmpty = !destPf || !holdingsCount(destPf)
+  const destStarter = destEmpty || isStarterPortfolio(destPf)
+  const guestStarter = isStarterPortfolio(guestPf)
+  if (guestStarter && !destEmpty) return { adopted: 0, replaced: false }
+
+  if (destStarter && !guestStarter) {
+    localStorage.setItem(vaultKey('fd_portfolios', accountId), JSON.stringify(guestPf))
+    const analyses = localStorage.getItem(vaultKey('fd_analyses', guestId))
+    if (analyses != null) localStorage.setItem(vaultKey('fd_analyses', accountId), analyses)
+    writeSyncMeta({ localUpdatedAt: Date.now() }, accountId)
+    return { adopted: holdingsCount(guestPf), replaced: true }
+  }
+
+  const dest = destPf?.length ? structuredClone(destPf) : emptyPortfolio()
+  if (!dest[0]) dest.unshift({ id: 1, name: '我的持仓', holdings: [] })
+  const destHold = dest[0].holdings
+  let adopted = 0
+  guestPf.forEach((p) => {
+    ;(p.holdings || []).forEach((h) => {
+      if (!h?.code) return
+      const code = String(h.code)
+      const existing = destHold.find((x) => String(x.code) === code)
+      if (!existing) {
+        destHold.push({ ...h, id: Date.now() + adopted })
+        adopted += 1
+        return
+      }
+      if ((!(Number(existing.shares) > 0) && Number(h.shares) > 0) || (!existing.cost && h.cost)) {
+        if (Number(h.shares) > 0) existing.shares = h.shares
+        if (Number(h.cost) > 0) existing.cost = h.cost
+        if (h.name) existing.name = h.name
+        adopted += 1
+      }
+    })
+  })
+  if (adopted) {
+    localStorage.setItem(vaultKey('fd_portfolios', accountId), JSON.stringify(dest))
+    writeSyncMeta({ localUpdatedAt: Date.now() }, accountId)
+  }
+  return { adopted, replaced: false }
+}
+
 /** Wipe vault keys and seed a new desk (default holding: 贵州茅台) */
 export function initFreshVault(accountId) {
   const prefix = vaultPrefix(accountId)

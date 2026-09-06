@@ -5,7 +5,7 @@ import { calculateValuation } from '@/services/valuation.js'
 import { calculatePosition } from '@/services/position.js'
 import { fetchAllDeep, fetchQuoteCached, hydrateFinancial } from '@/services/api.js'
 import { analyzeNews } from '@/services/analysis.js'
-import { vaultGet, vaultSet, emptyPortfolio, starterPortfolio, getActiveAccountId } from '@/services/vault.js'
+import { vaultGet, vaultSet, emptyPortfolio, starterPortfolio, getActiveAccountId, isGuestSession } from '@/services/vault.js'
 import { apiUrl } from '@/services/apiClient.js'
 import { inferHoldingEx } from '@/services/quotesRefresh.js'
 
@@ -137,9 +137,21 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  let cloudPushTimer = 0
+  function scheduleCloudPush() {
+    if (isGuestSession()) return
+    clearTimeout(cloudPushTimer)
+    cloudPushTimer = setTimeout(() => {
+      import('@/store/auth.js')
+        .then(({ useAuthStore }) => useAuthStore().pushCloud().catch(() => {}))
+        .catch(() => {})
+    }, 900)
+  }
+
   function persistPortfolios() {
     if (!getActiveAccountId()) return
     vaultSet('fd_portfolios', portfolios.value)
+    scheduleCloudPush()
   }
 
   function persistAnalyses() {
